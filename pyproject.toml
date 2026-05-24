@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "base81"
+version = "0.1.0"
+description = "Multi-radix binary-to-text codec with 98.1% efficiency"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Malachi Green", email = "greenmalachi76@gmail.com" }]
+keywords = ["base81", "base62", "encoding", "binary-to-text", "codec", "radix"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Archiving :: Compression",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov", "mypy>=1.0"]
+
+[project.urls]
+Homepage = "https://github.com/MalachiGreen/base81"
+Repository = "https://github.com/MalachiGreen/base81.git"
+Issues = "https://github.com/MalachiGreen/base81/issues"
+
+[project.scripts]
+base81 = "base81._cli:main"
+
+[tool.setuptools.packages.find]
+include = ["base81*"]
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
