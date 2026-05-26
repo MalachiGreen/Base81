@@ -95,7 +95,7 @@ dec.diagnostics() -> dict
 ⚠️ **Not yet on PyPI. Install from GitHub:**
 
 ```bash
-pip install git+https://github.com/MalachiGreen/base81.git
+pip install git+https://github.com/MalachiGreen/Base81.git
 ```
 
 ## License
