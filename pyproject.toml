@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "base81"
@@ -39,6 +39,7 @@ Issues = "https://github.com/MalachiGreen/Base81/issues"
 base81 = "base81._cli:main"
 
 [tool.setuptools.packages.find]
+where = ["."]
 include = ["base81*"]
 
 [tool.mypy]
