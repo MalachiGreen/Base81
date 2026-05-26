@@ -14,7 +14,7 @@ ALPHABET_STANDARD = (
     "0123456789"
     "ABCDEFGHJKLMNPQRSTUVWXYZ"  # I and O excluded (visually ambiguous)
     "abcdefghijkmnopqrstuvwxyz"  # l excluded
-    "!#$%&()*+-./:;=?@_~{}[]"
+    "!#$%&()*+-./:;=?@_{}[]"
 )
 
 ALPHABET_URL = (
