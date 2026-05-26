@@ -329,7 +329,7 @@ Auto-detection:
     dec.add_argument("inputs", nargs="*", help="Input files (omit for stdin)")
     dec.add_argument("-i", "--input", help="Single input file (alternative syntax)")
     dec.add_argument("-o", "--output", help="Output file (default: stdout)")
-    despair.add_argument("-d", "--output-dir", help="Output directory for multiple files")
+    dec.add_argument("-d", "--output-dir", help="Output directory for multiple files")
     dec.add_argument("-f", "--force", action="store_true",
                      help="Overwrite output files without asking")
     
