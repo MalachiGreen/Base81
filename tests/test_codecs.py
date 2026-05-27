@@ -3,6 +3,7 @@
 import pytest
 from base81._codecs import CODECS, LOOKUPS, get_codec, list_codecs
 from base81._exceptions import CodecError
+from base81._math import POW
 
 
 class TestCodecRegistration:
