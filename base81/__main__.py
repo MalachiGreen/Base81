@@ -53,7 +53,7 @@ if len(sys.argv) == 1:
 
     limited_dec = Decoder(block_size=3, alphabet_type="standard", max_buffer=20)
     try:
-        limited_dec.update("1234567890123456789012345")
+        limited_dec.update(b"1234567890123456789012345")
         raise RuntimeError("decoder buffer fail")
     except BoundaryError:
         d = limited_dec.diagnostics()
