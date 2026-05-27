@@ -23,7 +23,7 @@ from ._alphabet import ALPHABET_STANDARD, ALPHABET_URL
 from ._math import POW
 from ._exceptions import CodecError
 
-LOOKUPS = {
+_LOOKUPS = {
     "standard": {
         "base": 81,
         "to_char": ALPHABET_STANDARD,
@@ -39,7 +39,7 @@ LOOKUPS = {
 _CODECS = {}
 
 def _add(alpha, bs, fn, fk, te, td):
-    radix = LOOKUPS[alpha]["base"]
+    radix = _LOOKUPS[alpha]["base"]
     if POW[radix][fk] < POW[256][fn]:
         raise CodecError("headroom fail")
     if set(te.keys()) != set(range(1, fn)) or set(td.keys()) != set(te.values()):
@@ -75,6 +75,7 @@ for r in range(1, 5):
 _add("url", 5, 5, 7, t5e, t5d)
 
 CODECS = types.MappingProxyType(_CODECS)
+LOOKUPS = types.MappingProxyType(_LOOKUPS)
 
 def get_codec(alpha, bs):
     """Return codec config or None if not registered."""
