@@ -55,17 +55,16 @@ def int_to_radix(value, out_len, alpha_cfg):
 
 
 def radix_to_int(s, alpha_cfg, expected_len):
-    """Convert base-N string to integer, validating length."""
+    """Convert base-N string to integer, validating length and characters."""
     if len(s) != expected_len:
         raise CorruptStreamError("length mismatch")
     radix = alpha_cfg["base"]
     idx_map = alpha_cfg["to_idx"]
     val = 0
     for ch in s:
-        try:
-            val = val * radix + idx_map[ch]
-        except KeyError as e:
-            raise ValidationError(f"character {str(e)} not in alphabet") from e
+        if ch not in idx_map:
+            raise ValidationError(f"character '{ch}' not in alphabet")
+        val = val * radix + idx_map[ch]
     return val
 
 
