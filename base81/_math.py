@@ -4,7 +4,7 @@
 """
 Arithmetic primitives for radix conversion.
 
-Precomputed POW[base][exp] for base ∈ {62,81,256}, exp ≤ 16.
+Precomputed POW[base][exp] for base ∈ {62,81,100,256}, exp ≤ 16.
 
 Functions:
 - int_to_radix(value, out_len, alpha_cfg) -> string (little-endian digit order)
