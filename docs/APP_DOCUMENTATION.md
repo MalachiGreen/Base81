@@ -1,13 +1,13 @@
 # Base81/62 Documentation
 
 **Multi-Radix Binary-to-Text Codec**  
-Version 0.1.0
+Version `0.1.0`
 
 ---
 
 ## Overview
 
-Base81/62 encodes binary data to printable ASCII strings using either an 81-character alphabet (full ASCII printable set excluding `^`) or a 62-character URL-safe alphabet. Achieves ~23% better density than base64 (81 vs 64 characters) while maintaining safe transport properties.
+Base81/62 encodes binary data to printable ASCII strings using either an 81-character alphabet (full ASCII printable set excluding `^` and `~`) or a 62-character URL-safe alphabet. Achieves ~23% better density than base64 (81 vs 64 characters) while maintaining safe transport properties.
 
 **Key Features:**
 - Two alphabets: `standard` (81 chars, high density) and `url` (62 chars, safe for URLs/domain names)
@@ -23,11 +23,12 @@ Base81/62 encodes binary data to printable ASCII strings using either an 81-char
 
 ### Standard Alphabet (81 characters)
 ```text
-0123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz!#$%&()*+-./:;=?@_~{}[]
+0123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz!#$%&()*+-./:;=?@_{}[]
 ```
 - Excludes `I`, `O`, `l` (visually ambiguous)
 - Excludes `^` (reserved for header delimiter)
-- Includes 28 special characters
+- Excludes `~` (removed due to alphabet completion and overall redundancy)
+- Includes 22 special characters
 
 ### URL Alphabet (62 characters)
 ```text
@@ -96,7 +97,8 @@ Decode base-N string to bytes.
 
 **Returns:** bytes
 
-**Raises:**- `TypeError`: Non-string input
+**Raises:**
+- `TypeError`: Non-string input
 - `ValidationError`: Invalid character, whitespace (if not ignored), non-canonical tail
 - `CorruptStreamError`: Malformed block, overflow, bad tail length
 - `BoundaryError`: Input exceeds max_input_length
@@ -145,6 +147,7 @@ print(chunk1 + chunk2 + final)
 - `update(s: str) -> bytes`: Process chars, return decoded bytes (may be empty)
 - `finalize() -> bytes`: Flush remaining chars, validate tail, return final bytes
 - `diagnostics() -> dict`: Returns `{"buffer_len": int, "total_chars": int, "chunks": int}`
+
 **Buffer Limits:**
 - `max_input_length`: Total chars across all `update()` calls
 - `max_buffer`: Maximum pending chars (must be ≥ full_k + max_tail)
@@ -194,7 +197,8 @@ Return codec configuration or `None` if not registered.
 - `full_n`: Bytes per full block (3,5,7)
 - `full_k`: Chars per full block (4,7,9)
 - `tail_enc`: `{remainder_bytes: output_chars}`
-- `tail_dec`: `{input_chars: decoded_bytes}`- `max_tail`: Maximum tail chars
+- `tail_dec`: `{input_chars: decoded_bytes}`
+- `max_tail`: Maximum tail chars
 
 #### `list_codecs() -> list[tuple[str, int]]`
 Return all registered `(alphabet_type, block_size)` pairs.
@@ -293,7 +297,8 @@ except BoundaryError:
 decoded = decode(wrapped_string, ignore_whitespace=True)
 
 # For strict validation (e.g., API payloads)
-decoded = decode(api_string, ignore_whitespace=False)  # Raises on whitespace```
+decoded = decode(api_string, ignore_whitespace=False)  # Raises on whitespace
+```
 
 ---
 
@@ -440,7 +445,8 @@ All checks passed. 🚀
 **Self-test validates:**
 - Round-trip for all codecs (4096 bytes random)
 - Buffer limit enforcement (`BoundaryError` on overflow)
-- Header parsing- Tail canonicalization
+- Header parsing
+- Tail canonicalization
 - Empty input handling
 
 ---
