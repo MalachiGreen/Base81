@@ -75,8 +75,6 @@ for r in range(1, 5):
 _add("url", 5, 5, 7, t5e, t5d)
 
 CODECS = types.MappingProxyType(_CODECS)
-LOOKUPS = types.MappingProxyType(LOOKUPS)
-
 
 def get_codec(alpha, bs):
     """Return codec config or None if not registered."""
