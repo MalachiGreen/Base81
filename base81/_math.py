@@ -31,6 +31,7 @@ def _build(base, n):
 
 _STATIC_POW[81] = _build(81, 16)
 _STATIC_POW[62] = _build(62, 16)
+_STATIC_POW[100] = _build(100, 16)
 _STATIC_POW[256] = _build(256, 16)
 
 POW = types.MappingProxyType(_STATIC_POW)
