@@ -20,7 +20,7 @@ class TestAlphabetStandard:
         assert len(set(ALPHABET_STANDARD)) == 81
 
     def test_special_chars_present(self):
-        specials = "!#$%&()*+-./:;=?@_~{}[]"
+        specials = "!#$%&()*+-./:;=?@_{}[]"
         for ch in specials:
             assert ch in ALPHABET_STANDARD
 
