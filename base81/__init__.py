@@ -45,9 +45,11 @@ from ._codecs import get_codec, list_codecs
 from ._exceptions import CodecError, ValidationError, CorruptStreamError, BoundaryError
 from ._api import encode, decode
 from ._stream import Encoder, Decoder
+from ._header import make_header, parse_header
 
 __all__ = [
     "encode", "decode", "Encoder", "Decoder",
+    "make_header", "parse_header",
     "CodecError", "ValidationError", "CorruptStreamError", "BoundaryError",
     "ALPHABET_STANDARD", "ALPHABET_URL",
     "get_codec", "list_codecs",
