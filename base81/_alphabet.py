@@ -4,17 +4,17 @@
 """
 Character sets for Base81 and Base62 encoding.
 
-ALPHABET_STANDARD (81 chars): digits (0-9) + uppercase (excl I,O) + lowercase (excl l) + 28 specials
+ALPHABET_STANDARD (81 chars): digits (0-9) + uppercase (excl I,O) + lowercase (excl l) + 22 specials
 ALPHABET_URL (62 chars): digits + uppercase + lowercase (full sets, no specials)
 
-Both alphabets exclude '^' which is reserved for header delimiter.
+Both alphabets exclude '^' which is reserved for header delimiter and '~' which is removed due to the alphabet's completion.
 """
 
 ALPHABET_STANDARD = (
     "0123456789"
     "ABCDEFGHJKLMNPQRSTUVWXYZ"  # I and O excluded (visually ambiguous)
     "abcdefghijkmnopqrstuvwxyz"  # l excluded
-    "!#$%&()*+-./:;=?@_{}[]"
+    "!#$%&()*+-./:;=?@_{}[]"  # ^ and ~ excluded
 )
 
 ALPHABET_URL = (
