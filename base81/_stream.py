@@ -99,7 +99,7 @@ class Decoder:
             raise ValidationError(f"unknown codec")
         if max_input_length is not None and (isinstance(max_input_length, bool) or not isinstance(max_input_length, int) or max_input_length <= 0):
             raise ValidationError("max_input_length must be positive int")
-        if isinstance(max_buffer, bool) or not isinstance(max_buffer, int) or max_buffer <= 0:
+        if max_buffer is not None and (isinstance(max_buffer, bool) or not isinstance(max_buffer, int) or max_buffer <= 0):
             raise ValidationError("max_buffer must be positive int")
 
         fk, mt = cfg["full_k"], cfg["max_tail"]
