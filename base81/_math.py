@@ -31,7 +31,6 @@ def _build(base, n):
 
 _STATIC_POW[81] = _build(81, 16)
 _STATIC_POW[62] = _build(62, 16)
-_STATIC_POW[100] = _build(100, 16)
 _STATIC_POW[256] = _build(256, 16)
 
 POW = types.MappingProxyType(_STATIC_POW)
@@ -78,5 +77,3 @@ def int_to_bytes(value, length):
     if value >= (1 << (8 * length)):
         raise ValueError("value too large")
     return value.to_bytes(length, 'big')
-
-__all__ = ["POW", "int_to_radix", "radix_to_int", "bytes_to_int", "int_to_bytes"]
