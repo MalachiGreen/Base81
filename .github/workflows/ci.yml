@@ -35,7 +35,7 @@ jobs:
   test:
     strategy:
       matrix:
-        python: ${{ github.event.inputs.python_version != '' && format('["{0}"]', github.event.inputs.python_version) || '["3.8", "3.9", "3.10", "3.11", "3.12"]' }}
+        python: ${{ fromJSON(github.event.inputs.python_version != '' && format('["{0}"]', github.event.inputs.python_version) || '["3.8", "3.9", "3.10", "3.11", "3.12"]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,5 +52,5 @@ jobs:
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_type_check == 'true' }}
         run: mypy base81
       - name: Lint
-        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_lint == 'true' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.run_type_check == 'true' }}
         run: ruff check base81 tests
