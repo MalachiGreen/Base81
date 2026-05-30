@@ -51,7 +51,7 @@ if len(sys.argv) == 1:
         assert d["total_bytes"] == 0
         assert d["buffer_len"] == 0
 
-    limited_dec = Decoder(block_size=3, alphabet_type="standard", max_buffer=20)
+    limited_dec = Decoder(block_size=3, alphabet_type="standard", max_buffer=3)
     try:
         limited_dec.update("12345678")
         raise RuntimeError("decoder buffer fail")
