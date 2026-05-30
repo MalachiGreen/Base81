@@ -1,16 +1,14 @@
 # Base81/62
 
-![Base81](graphics/repo_icon/rounded_icon_icon.png)
+![Icon](graphics/repo_poster/poster_small.jpg)
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
-![Python](https://img.shields.io/badge/python-3.8+-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
-![CI](https://github.com/MalachiGreen/Base81/actions/workflows/ci.yml/badge.svg)
+[![version](https://img.shields.io/badge/version-0.1.0-blue)](https://img.shields.io/badge/version-0.1.0-blue)
+[![python](https://img.shields.io/badge/python-3.8+-blue)](https://img.shields.io/badge/python-3.8+-blue)
+[![license](https://img.shields.io/badge/license-MIT-green)](https://img.shields.io/badge/license-MIT-green)
+[![dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)](https://img.shields.io/badge/dependencies-none-brightgreen)
+[![CI](https://github.com/MalachiGreen/Base81/actions/workflows/ci.yml/badge.svg)](https://github.com/MalachiGreen/Base81/actions/workflows/ci.yml)
 
 **Multi-radix binary-to-text codec. Zero dependencies. Production-hardened.**
-
-Need full documentations? [Click here!](#other-documentations)
 
 ---
 
@@ -25,16 +23,16 @@ encoded = encode(data)
 decoded = decode(encoded)
 assert decoded == data
 
-# URL-safe radix-62 (94.6% efficiency)
+# URL‑safe radix-62 (94.6% efficiency)
 url_safe = encode(data, alphabet_type="url")
 decoded = decode(url_safe, alphabet_type="url")
 assert decoded == data
 ```
 
-### CLI
+## CLI
 
 ```bash
-# Encode with self-describing header
+# Encode with self‑describing header
 $ echo -n "Hello" | base81 encode --header
 ^b81:7:standard^8pJTDW^^
 
@@ -45,24 +43,25 @@ Hello
 
 ## Features
 
-*   **Two alphabets**: Standard (81 chars, 98.1% efficient) and URL-safe (62 chars, 94.6% efficient)
-*   **No padding**: Variable-length tail blocks eliminate `=` or `^` padding characters
-*   **Streaming API**: Process multi-gigabyte data with bounded memory
-*   **DoS hardened**: Configurable `max_input_length` and `max_buffer` guards
-*   **Canonical encoding**: Every byte sequence maps to exactly one valid string
-*   **Self-describing headers**: Optional `^b81:N:alphabet^` framing for protocol use
-*   **Zero dependencies**: Pure Python 3.8+, standard library only
+- **Two alphabets**: Standard (81 chars, 98.1% efficient) and URL‑safe (62 chars, 94.6% efficient)
+- **No padding**: Variable‑length tail blocks eliminate `=` or `^` padding characters
+- **Streaming API**: Process multi‑gigabyte data with bounded memory
+- **DoS hardened**: Configurable `max_input_length` and `max_buffer` guards
+- **Canonical encoding**: Every byte sequence maps to exactly one valid string
+- **Self‑describing headers**: Optional `^b81:N:alphabet^` framing for protocol use
+- **Zero dependencies**: Pure Python 3.8+, standard library only
 
 ## Supported Codecs
 
 | Alphabet | Radix | Block | Efficiency | Use Case |
-| :--- | :--- | :--- | :--- | :--- |
-| standard | 81 | 7→9 | 98.1% | Maximum density || standard | 81 | 3→4 | 94.6% | Legacy / short messages |
+| :--- | :---: | :---: | :---: | :--- |
+| standard | 81 | 7→9 | 98.1% | Maximum density |
+| standard | 81 | 3→4 | 94.6% | Legacy / short messages |
 | url | 62 | 5→7 | 94.6% | URLs, filenames, shells |
 
 ## API
 
-### One-Shot
+### One‑Shot Functions
 
 ```python
 encode(data, *, line_width=None, block_size=7, alphabet_type="standard") -> str
@@ -83,13 +82,13 @@ dec.finalize() -> bytes
 dec.diagnostics() -> dict
 ```
 
-## Exceptions
+### Exceptions
 
-| Exception | When |
+| Exception | When Raised |
 | :--- | :--- |
-| `ValidationError` | Invalid parameters, non-canonical input |
+| `ValidationError` | Invalid parameters, non‑canonical input |
 | `CorruptStreamError` | Malformed blocks, structural defects |
-| `BoundaryError` | Input/buffer limits exceeded |
+| `BoundaryError` | Input or buffer limits exceeded |
 
 ## Performance
 
@@ -97,25 +96,23 @@ dec.diagnostics() -> dict
 | :--- | :--- |
 | Encode throughput | 200 MB/s (single thread, 1 MB input) |
 | Decode throughput | 200 MB/s |
-| Streaming overhead | <5% vs one-shot |
+| Streaming overhead | <5% versus one‑shot |
 | Memory (streaming) | <8 KB typical, configurable cap |
-
 ## Installation
 
-⚠️ **Not yet on PyPI. Install from GitHub:**
+Install directly from GitHub (PyPI release pending):
 
 ```bash
 pip install git+https://github.com/MalachiGreen/Base81.git
 ```
 
-## Other Documentations
+## Documentation
 
-Need **detailed information**? Check out the table below.
-
-| Documentation | Link |
-| :--- | :---|
-| 📙  Full package docs | [**Click Here**](docs/APP_DOCUMENTATION.md) |
-| 🔢  Mathematical docs | [**Click Here**](docs/MATH_DOCUMENTATION.md) |
+| Document | Link |
+| :--- | :--- |
+| Full package documentation | [docs/APP_DOCUMENTATION.md](docs/APP_DOCUMENTATION.md) |
+| Mathematical background | [docs/MATH_DOCUMENTATION.md](docs/MATH_DOCUMENTATION.md) |
 
 ## License
+
 MIT
