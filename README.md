@@ -10,7 +10,7 @@
 
 **Multi-radix binary-to-text codec. Zero dependencies. Production-hardened.**
 
-Need full documentations? [**Click here!**](#other-documentations)
+Need full documentations? [Click here!](#other-documentations)
 ---
 
 ## Quick Start
@@ -109,12 +109,12 @@ pip install git+https://github.com/MalachiGreen/Base81.git
 
 ## Other Documentations
 
-Need **detailed information**? Check the table below.
+Need **detailed information**? Check out the table below.
 
 | Documentation | Link |
 | :--- | :---|
-| **📙  Full package docs** | [**Click Here**](docs/APP_DOCUMENTATION.md) |
-| **🔢  Mathematical docs** | [**Click Here**](docs/MATH_DOCUMENTATION.md) |
+| 📙  Full package docs | [**Click Here**](docs/APP_DOCUMENTATION.md) |
+| 🔢  Mathematical docs | [**Click Here**](docs/MATH_DOCUMENTATION.md) |
 
 ## License
 MIT
