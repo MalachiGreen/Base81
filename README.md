@@ -1,6 +1,6 @@
 # Base81/62
 
-![Icon](graphics/repo_poster/poster_small.jpg)
+![Icon](https://raw.githubusercontent.com/MalachiGreen/Base81-Graphics/refs/heads/main/graphics/repo_poster/poster_small.jpg)
 
 [![version](https://img.shields.io/badge/version-0.1.0-blue)](https://img.shields.io/badge/version-0.1.0-blue)
 [![python](https://img.shields.io/badge/python-3.8+-blue)](https://img.shields.io/badge/python-3.8+-blue)

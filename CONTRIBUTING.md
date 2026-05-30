@@ -1,6 +1,6 @@
 # Contributing to Base81/62
 
-![Icon](graphics/repo_icon/flat/flat_icon_medium.jpg)
+![Icon](https://raw.githubusercontent.com/MalachiGreen/Base81-Graphics/refs/heads/main/graphics/repo_icon/flat/flat_icon_medium.jpg)
 
 ## Quick Start
 
