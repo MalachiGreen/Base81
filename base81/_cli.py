@@ -14,7 +14,7 @@ Features:
     - Streaming mode for large files (constant memory)
     - Batch processing with parallel jobs (-j)
     - Self-describing headers for auto-detection (-H)
-    - Shell completion (bash, zsh, fish)
+    - Shell completion via argcomplete (bash, zsh, fish, tcsh)
     - Config file support (~/.base81rc)
     - Benchmark mode and dry-run preview
     - Progress indicator for large files
@@ -97,6 +97,11 @@ from contextlib import contextmanager
 from ._api import encode, decode
 from ._header import make_header, parse_header
 from ._exceptions import CorruptStreamError, ValidationError, BoundaryError
+
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
 
 __all__ = ["main"]
 __version__ = "0.1.0"
@@ -220,7 +225,7 @@ def _get_file_size(path: Optional[str]) -> Optional[int]:
     return None
 
 
-# Streaming classes (same as before, but fixed fish support)
+# Streaming classes
 class StreamingEncoder:
     def __init__(self, block_size: int = 7, alphabet_type: str = "standard",
                  line_width: Optional[int] = None, buffer_size: int = 64 * 1024):
@@ -341,278 +346,68 @@ def _run_benchmark(block_size: int, alphabet_type: str, size_mb: int = 10):
     print(f"Efficiency: {theoretical:.1%} theoretical, ~{actual:.1%} actual")
 
 
-# Shell completion generation (full fish)
-def _generate_completion(shell: str) -> str:
-    base_commands = ["encode", "decode", "info", "help", "completion"]
-    encode_opts = ["--input", "--output", "--output-dir", "--force", "--line-width",
-                   "--block-size", "--alphabet", "--header", "--stream", "--buffer-size",
-                   "--jobs", "--benchmark", "--dry-run"]
-    decode_opts = ["--input", "--output", "--output-dir", "--force", "--block-size",
-                   "--alphabet", "--header", "--ignore-ws", "--no-canonical-check",
-                   "--max-input-length", "--stream", "--buffer-size", "--dry-run"]
-    info_opts = []
-    help_opts = ["encode", "decode", "info", "help", "completion"]
-    completion_opts = ["install", "bash", "zsh", "fish"]
-    
-    block_sizes = ["3", "5", "7"]
-    alphabets = ["standard", "url"]
-    
-    if shell == "bash":
-        return f'''# bash completion for base81
-_base81_completion() {{
-    local cur prev words cword
-    _init_completion || return
-
-    case $prev in
-        --block-size|-b)
-            COMPREPLY=($(compgen -W "{' '.join(block_sizes)}" -- "$cur"))
-            return 0
-            ;;
-        --alphabet|-a)
-            COMPREPLY=($(compgen -W "{' '.join(alphabets)}" -- "$cur"))
-            return 0
-            ;;
-        --jobs|-j|--buffer-size|--line-width|-w|--max-input-length|-m)
-            return 0
-            ;;
-        help)
-            COMPREPLY=($(compgen -W "{' '.join(help_opts)}" -- "$cur"))
-            return 0
-            ;;
-        completion)
-            COMPREPLY=($(compgen -W "{' '.join(completion_opts)}" -- "$cur"))
-            return 0
-            ;;
-    esac
-
-    if [[ $cur == -* ]]; then
-        case ${{words[1]}} in
-            encode|enc|e)
-                COMPREPLY=($(compgen -W "{' '.join(encode_opts)}" -- "$cur"))
-                ;;
-            decode|dec|d)
-                COMPREPLY=($(compgen -W "{' '.join(decode_opts)}" -- "$cur"))
-                ;;
-            info|show|status)
-                COMPREPLY=($(compgen -W "{' '.join(info_opts)}" -- "$cur"))
-                ;;
-            help|completion)
-                COMPREPLY=($(compgen -W "{' '.join(help_opts)}" -- "$cur"))
-                ;;
-            *)
-                COMPREPLY=($(compgen -W "{' '.join(base_commands)} --help --version -v -q" -- "$cur"))
-                ;;
-        esac
-    else
-        COMPREPLY=($(compgen -W "{' '.join(base_commands)}" -- "$cur"))
-    fi
-}} && complete -F _base81_completion base81
-'''
-    elif shell == "zsh":
-        return f'''# zsh completion for base81
-#compdef base81
-
-_base81_completion() {{
-    local context state line
-    typeset -A opt_args
-
-    _arguments -C \\
-        '1: :(encode decode info help completion)' \\
-        '*::arg:->args'
-
-    case $state in
-        args)
-            case $words[1] in
-                encode|enc|e)
-                    _arguments \\
-                        '(-i --input)'{{-i,--input}}':input file:_files' \\
-                        '(-o --output)'{{-o,--output}}':output file:_files' \\
-                        '(-d --output-dir)'{{-d,--output-dir}}':output directory:_files -/' \\
-                        '(-f --force)'{{-f,--force}}'[overwrite]' \\
-                        '(-w --line-width)'{{-w,--line-width}}':line width' \\
-                        '(-b --block-size)'{{-b,--block-size}}':block size:(3 5 7)' \\
-                        '(-a --alphabet)'{{-a,--alphabet}}':alphabet:(standard url)' \\
-                        '(-H --header)'{{-H,--header}}'[add header]' \\
-                        '(-s --stream)'{{-s,--stream}}'[streaming]' \\
-                        '--buffer-size:buffer size' \\
-                        '(-j --jobs)'{{-j,--jobs}}':jobs' \\
-                        '--benchmark' \\
-                        '--dry-run' \\
-                        '*:input files:_files'
-                    ;;
-                decode|dec|d)
-                    _arguments \\
-                        '(-i --input)'{{-i,--input}}':input file:_files' \\
-                        '(-o --output)'{{-o,--output}}':output file:_files' \\
-                        '(-d --output-dir)'{{-d,--output-dir}}':output directory:_files -/' \\
-                        '(-f --force)'{{-f,--force}}'[overwrite]' \\
-                        '(-b --block-size)'{{-b,--block-size}}':block size:(3 5 7)' \\
-                        '(-a --alphabet)'{{-a,--alphabet}}':alphabet:(standard url)' \\
-                        '(-H --header)'{{-H,--header}}'[parse header]' \\
-                        '--ignore-ws' \\
-                        '--no-canonical-check' \\
-                        '(-m --max-input-length)'{{-m,--max-input-length}}':max length' \\
-                        '(-s --stream)'{{-s,--stream}}'[streaming]' \\
-                        '--buffer-size:buffer size' \\
-                        '--dry-run' \\
-                        '*:input files:_files'
-                    ;;
-                info|show|status)
-                    _arguments ':file:_files'
-                    ;;
-                help)
-                    _arguments ':command:(encode decode info help completion)'
-                    ;;
-                completion)
-                    _arguments ':action:(install bash zsh fish)'
-                    ;;
-            esac
-            ;;
-    esac
-}}
-
-compdef _base81_completion base81
-'''
-    elif shell == "fish":
-        # Complete fish completion script with all subcommands and options
-        return f'''# fish completion for base81
-function __fish_base81_needs_command
-    set cmd (commandline -opc)
-    test (count $cmd) -eq 1
-end
-
-function __fish_base81_using_command
-    set cmd (commandline -opc)
-    test (count $cmd) -gt 1; and test $argv[1] = $cmd[2]
-end
-
-# Commands
-complete -f -c base81 -n '__fish_base81_needs_command' -a encode -d 'Encode binary to text'
-complete -f -c base81 -n '__fish_base81_needs_command' -a decode -d 'Decode text to binary'
-complete -f -c base81 -n '__fish_base81_needs_command' -a info -d 'Show codec information'
-complete -f -c base81 -n '__fish_base81_needs_command' -a help -d 'Show detailed help'
-complete -f -c base81 -n '__fish_base81_needs_command' -a completion -d 'Shell completion'
-
-# Global options
-complete -f -c base81 -s v -l verbose -d 'Increase verbosity'
-complete -f -c base81 -s q -l quiet -d 'Suppress output'
-complete -f -c base81 -l version -d 'Show version'
-complete -f -c base81 -s h -l help -d 'Show help'
-
-# Encode options
-complete -f -c base81 -n '__fish_base81_using_command encode' -s i -l input -d 'Input file' -r
-complete -f -c base81 -n '__fish_base81_using_command encode' -s o -l output -d 'Output file' -r
-complete -f -c base81 -n '__fish_base81_using_command encode' -s d -l output-dir -d 'Output directory' -r -f -a '(__fish_complete_directories)'
-complete -f -c base81 -n '__fish_base81_using_command encode' -s f -l force -d 'Overwrite'
-complete -f -c base81 -n '__fish_base81_using_command encode' -s w -l line-width -d 'Wrap at COLS' -r
-complete -f -c base81 -n '__fish_base81_using_command encode' -s b -l block-size -d 'Bytes per block' -r -a '3 5 7'
-complete -f -c base81 -n '__fish_base81_using_command encode' -s a -l alphabet -d 'Alphabet' -r -a 'standard url'
-complete -f -c base81 -n '__fish_base81_using_command encode' -s H -l header -d 'Add header'
-complete -f -c base81 -n '__fish_base81_using_command encode' -s s -l stream -d 'Streaming mode'
-complete -f -c base81 -n '__fish_base81_using_command encode' -l buffer-size -d 'Buffer size' -r
-complete -f -c base81 -n '__fish_base81_using_command encode' -s j -l jobs -d 'Parallel jobs' -r
-complete -f -c base81 -n '__fish_base81_using_command encode' -l benchmark -d 'Run benchmark'
-complete -f -c base81 -n '__fish_base81_using_command encode' -l dry-run -d 'Preview only'
-
-# Decode options
-complete -f -c base81 -n '__fish_base81_using_command decode' -s i -l input -d 'Input file' -r
-complete -f -c base81 -n '__fish_base81_using_command decode' -s o -l output -d 'Output file' -r
-complete -f -c base81 -n '__fish_base81_using_command decode' -s d -l output-dir -d 'Output directory' -r -f -a '(__fish_complete_directories)'
-complete -f -c base81 -n '__fish_base81_using_command decode' -s f -l force -d 'Overwrite'
-complete -f -c base81 -n '__fish_base81_using_command decode' -s b -l block-size -d 'Override block size' -r -a '3 5 7'
-complete -f -c base81 -n '__fish_base81_using_command decode' -s a -l alphabet -d 'Override alphabet' -r -a 'standard url'
-complete -f -c base81 -n '__fish_base81_using_command decode' -s H -l header -d 'Parse header'
-complete -f -c base81 -n '__fish_base81_using_command decode' -l ignore-ws -d 'Strip whitespace'
-complete -f -c base81 -n '__fish_base81_using_command decode' -l no-canonical-check -d 'Disable canonical validation'
-complete -f -c base81 -n '__fish_base81_using_command decode' -s m -l max-input-length -d 'Max input length' -r
-complete -f -c base81 -n '__fish_base81_using_command decode' -s s -l stream -d 'Streaming mode'
-complete -f -c base81 -n '__fish_base81_using_command decode' -l buffer-size -d 'Buffer size' -r
-complete -f -c base81 -n '__fish_base81_using_command decode' -l dry-run -d 'Preview only'
-
-# Info options
-complete -f -c base81 -n '__fish_base81_using_command info' -r -a '(__fish_complete_suffix .b81)'
-
-# Help options
-complete -f -c base81 -n '__fish_base81_using_command help' -a 'encode decode info help completion' -d 'Command'
-
-# Completion options
-complete -f -c base81 -n '__fish_base81_using_command completion' -a 'install bash zsh fish' -d 'Action'
-'''
-    else:
-        raise ValueError(f"Unsupported shell: {shell}")
-
-
-# Completion installation
-def _install_completion(shell: Optional[str] = None) -> bool:
-    """Install completion for detected shell."""
-    if shell is None:
-        # Detect from environment
-        shell = os.environ.get('SHELL', '')
-        if 'bash' in shell:
-            shell = 'bash'
-        elif 'zsh' in shell:
-            shell = 'zsh'
-        elif 'fish' in shell:
-            shell = 'fish'
-        else:
-            print("Could not detect shell. Please specify --shell bash|zsh|fish", file=sys.stderr)
-            return False
-    
-    script = _generate_completion(shell)
-    
-    # Determine rc file
-    if shell == 'bash':
-        rc_file = os.path.expanduser("~/.bashrc")
-        marker = "# base81 completion"
-    elif shell == 'zsh':
-        rc_file = os.path.expanduser("~/.zshrc")
-        marker = "# base81 completion"
-    elif shell == 'fish':
-        fish_config = os.path.expanduser("~/.config/fish/config.fish")
-        os.makedirs(os.path.dirname(fish_config), exist_ok=True)
-        rc_file = fish_config
-        marker = "# base81 completion"
-    else:
-        print(f"Unsupported shell: {shell}", file=sys.stderr)
-        return False
-    
-    # Check if already installed
-    if os.path.exists(rc_file):
-        with open(rc_file) as f:
-            if marker in f.read():
-                print(f"Completion already installed in {rc_file}", file=sys.stderr)
-                return False
-    
-    # Append to rc file
-    with open(rc_file, 'a') as f:
-        f.write(f"\n{marker}\n")
-        if shell == 'fish':
-            f.write(script)
-        else:
-            f.write(f"source <(base81 completion {shell})\n")
-    
-    print(f"Installed {shell} completion to {rc_file}")
-    print(f"Please restart your shell or run: source {rc_file}")
-    return True
-
+# Completion
 def cmd_completion(args):
-    """Handle completion subcommand."""
-    if not args.action:
-        print("Usage: base81 completion {install|bash|zsh|fish}", file=sys.stderr)
+    """Handle shell completion via argcomplete."""
+    if argcomplete is None:
+        print("base81: argcomplete not installed. Run: pip install argcomplete", file=sys.stderr)
         return 1
     
     if args.action == "install":
-        shell = args.shell if hasattr(args, 'shell') else None
-        if _install_completion(shell):
-            return 0
-        return 1
-    else:
-        try:
-            print(_generate_completion(args.action))
-            return 0
-        except ValueError as e:
-            print(f"base81: error: {e}", file=sys.stderr)
+        # Detect shell from environment
+        shell_path = os.environ.get('SHELL', '')
+        shell = os.path.basename(shell_path) if shell_path else ''
+        
+        if shell not in ('bash', 'zsh', 'fish', 'tcsh'):
+            print(f"Could not detect shell from SHELL={shell_path!r}", file=sys.stderr)
+            print("Please specify shell explicitly: base81 completion bash", file=sys.stderr)
             return 1
+        
+        # Determine rc file
+        rc_files = {
+            'bash': os.path.expanduser('~/.bashrc'),
+            'zsh': os.path.expanduser('~/.zshrc'),
+            'fish': os.path.expanduser('~/.config/fish/config.fish'),
+            'tcsh': os.path.expanduser('~/.tcshrc'),
+        }
+        rc_file = rc_files[shell]
+        
+        # Ensure fish config dir exists
+        if shell == 'fish':
+            os.makedirs(os.path.dirname(rc_file), exist_ok=True)
+        
+        # Generate activation line
+        marker = "# base81 argcomplete activation"
+        if shell == 'fish':
+            activation = f"\n{marker}\nregister-python-argcomplete base81\n"
+        elif shell == 'tcsh':
+            activation = f"\n{marker}\neval `register-python-argcomplete --shell tcsh base81`\n"
+        else:
+            activation = f"\n{marker}\neval \"$(register-python-argcomplete base81)\"\n"
+        
+        # Check if already installed
+        if os.path.exists(rc_file):
+            with open(rc_file) as f:
+                if marker in f.read():
+                    print(f"Completion already installed in {rc_file}", file=sys.stderr)
+                    return 0
+        
+        # Append to rc file
+        with open(rc_file, 'a') as f:
+            f.write(activation)
+        
+        print(f"Installed {shell} completion to {rc_file}")
+        print(f"Restart your shell or run: source {rc_file}")
+        return 0
+    
+    elif args.action:
+        # Print shell-specific activation script
+        print(argcomplete.shellcode([sys.argv[0]], shell=args.action))
+        return 0
+    
+    else:
+        print("Usage: base81 completion {install|bash|zsh|fish|tcsh}", file=sys.stderr)
+        return 1
 
 
 # Detailed help
@@ -705,20 +500,16 @@ COMMANDS:
         "completion": """\
 COMPLETION DETAILS
 
-Generate or install shell completion.
+Install shell completion using argcomplete.
 
 Usage:
-  base81 completion bash       # Print bash completion script
-  base81 completion zsh        # Print zsh completion script
-  base81 completion fish       # Print fish completion script
-  base81 completion install    # Auto-install for current shell
+  base81 completion install    # Auto-detect shell and install
+  base81 completion bash       # Print bash activation script
+  base81 completion zsh        # Print zsh activation script
+  base81 completion fish       # Print fish activation script
+  base81 completion tcsh       # Print tcsh activation script
 
-To install manually:
-  bash: source <(base81 completion bash)
-  zsh:  source <(base81 completion zsh)
-  fish: base81 completion fish | source
-
-To auto-install: base81 completion install
+Requires: pip install argcomplete
 """
     }
     return helps.get(subcommand, f"No detailed help for '{subcommand}'")
@@ -757,36 +548,36 @@ Examples:
 
     # Encode
     enc = sub.add_parser("encode", aliases=["enc", "e"])
-    enc.add_argument("inputs", nargs="*")
+    enc.add_argument("inputs", nargs="*", metavar="FILE")
     enc.add_argument("-i", "--input")
     enc.add_argument("-o", "--output")
     enc.add_argument("-d", "--output-dir")
     enc.add_argument("-f", "--force", action="store_true")
-    enc.add_argument("-w", "--line-width", type=int)
-    enc.add_argument("-b", "--block-size", type=int, choices=[3, 5, 7])
+    enc.add_argument("-w", "--line-width", type=int, metavar="COLS")
+    enc.add_argument("-b", "--block-size", type=int, choices=[3, 5, 7], metavar="N")
     enc.add_argument("-a", "--alphabet", choices=["standard", "url"])
     enc.add_argument("-H", "--header", action="store_true")
     enc.add_argument("-s", "--stream", action="store_true")
-    enc.add_argument("--buffer-size", type=int)
-    enc.add_argument("-j", "--jobs", type=int)
+    enc.add_argument("--buffer-size", type=int, metavar="BYTES")
+    enc.add_argument("-j", "--jobs", type=int, metavar="N")
     enc.add_argument("--benchmark", action="store_true")
     enc.add_argument("--dry-run", action="store_true")
 
     # Decode
     dec = sub.add_parser("decode", aliases=["dec", "d"])
-    dec.add_argument("inputs", nargs="*")
+    dec.add_argument("inputs", nargs="*", metavar="FILE")
     dec.add_argument("-i", "--input")
     dec.add_argument("-o", "--output")
     dec.add_argument("-d", "--output-dir")
     dec.add_argument("-f", "--force", action="store_true")
-    dec.add_argument("-b", "--block-size", type=int, choices=[3, 5, 7])
+    dec.add_argument("-b", "--block-size", type=int, choices=[3, 5, 7], metavar="N")
     dec.add_argument("-a", "--alphabet", choices=["standard", "url"])
     dec.add_argument("-H", "--header", action="store_true")
     dec.add_argument("--ignore-ws", action="store_true")
     dec.add_argument("--no-canonical-check", action="store_true")
-    dec.add_argument("-m", "--max-input-length", type=int)
+    dec.add_argument("-m", "--max-input-length", type=int, metavar="N")
     dec.add_argument("-s", "--stream", action="store_true")
-    dec.add_argument("--buffer-size", type=int)
+    dec.add_argument("--buffer-size", type=int, metavar="BYTES")
     dec.add_argument("--dry-run", action="store_true")
 
     # Info
@@ -799,13 +590,12 @@ Examples:
 
     # Completion
     comp = sub.add_parser("completion")
-    comp.add_argument("action", choices=["install", "bash", "zsh", "fish"], nargs="?")
-    comp.add_argument("--shell", choices=["bash", "zsh", "fish"], help="For install action")
+    comp.add_argument("action", nargs="?", choices=["install", "bash", "zsh", "fish", "tcsh"])
 
     return parser
 
 
-# Command implementations (with config merging)
+# Command implementations
 def cmd_encode(args):
     # Load config
     config = load_config(args.config)
@@ -1037,6 +827,11 @@ def cmd_info(args):
 def main():
     signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(130))
     parser = _create_parser()
+    
+    # Activate argcomplete if available
+    if argcomplete:
+        argcomplete.autocomplete(parser)
+    
     args = parser.parse_args()
 
     if args.cmd in ("encode", "enc", "e"):
