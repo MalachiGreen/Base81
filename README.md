@@ -1,7 +1,16 @@
 # Base81/62
 
+![Base81](graphics/repo_icon/rounded_icon_icon.png)
+
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Python](https://img.shields.io/badge/python-3.8+-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
+![CI](https://github.com/MalachiGreen/Base81/actions/workflows/ci.yml/badge.svg)
+
 **Multi-radix binary-to-text codec. Zero dependencies. Production-hardened.**
 
+Need full documentations? [**Click here!**](#other-documentations)
 ---
 
 ## Quick Start
@@ -97,6 +106,15 @@ dec.diagnostics() -> dict
 ```bash
 pip install git+https://github.com/MalachiGreen/Base81.git
 ```
+
+## Other Documentations
+
+Need **detailed information**? Check the table below.
+
+| Documentation | Link |
+| :--- | :---|
+| **📙  Full package docs** | [**Click Here**](docs/APP_DOCUMENTATION.md) |
+| **🔢  Mathematical docs** | [**Click Here**](docs/MATH_DOCUMENTATION.md) |
 
 ## License
 MIT
