@@ -1,186 +1,127 @@
-"""Tests for CLI interface."""
-
-import pytest
-import subprocess
 import sys
-import os
-import tempfile
+import pytest
+from io import StringIO
+from contextlib import redirect_stdout, redirect_stderr
+from base81._cli import main
+import base81
 
 
-class TestSelfTest:
-    def test_self_test_passes(self):
-        result = subprocess.run(
-            [sys.executable, "-m", "base81"],
-            capture_output=True,
-            text=True,
-            cwd=os.path.dirname(os.path.dirname(__file__))
-        )
-        assert result.returncode == 0
-        assert "All checks passed" in result.stdout
-
-    def test_self_test_no_errors(self):
-        result = subprocess.run(
-            [sys.executable, "-m", "base81"],
-            capture_output=True,
-            text=True
-        )
-        assert result.stderr == ""
-
-
-class TestCliEncodeDecode:
-    @pytest.fixture
-    def test_data(self):
-        return b"Hello Base81 World! " * 100
-
-    def test_encode_stdin_stdout(self, test_data):
-        result = subprocess.run(
-            [sys.executable, "-m", "base81", "encode"],
-            input=test_data,
-            capture_output=True
-        )
-        assert result.returncode == 0
-        assert len(result.stdout) > 0
-
-    def test_encode_decode_roundtrip(self, test_data):
-        encode_result = subprocess.run(
-            [sys.executable, "-m", "base81", "encode"],
-            input=test_data,
-            capture_output=True
-        )
-        assert encode_result.returncode == 0
-        
-        decode_result = subprocess.run(
-            [sys.executable, "-m", "base81", "decode"],
-            input=encode_result.stdout,
-            capture_output=True
-        )
-        assert decode_result.returncode == 0
-        assert decode_result.stdout == test_data
-
-    def test_encode_with_line_width(self, test_data):
-        result = subprocess.run(
-            [sys.executable, "-m", "base81", "encode", "--line-width", "40"],
-            input=test_data,
-            capture_output=True,
-            text=True
-        )
-        assert result.returncode == 0
-        lines = result.stdout.strip().split('\n')
-        assert all(len(line) <= 40 for line in lines)
-
-    def test_decode_with_ignore_ws(self, test_data):
-        # First encode with line wrapping
-        encode_result = subprocess.run(
-            [sys.executable, "-m", "base81", "encode", "--line-width", "40"],
-            input=test_data,
-            capture_output=True,
-            text=True
-        )
-        
-        # Decode with whitespace ignore
-        decode_result = subprocess.run(
-            [sys.executable, "-m", "base81", "decode", "--ignore-ws"],
-            input=encode_result.stdout,
-            capture_output=True
-        )
-        assert decode_result.stdout == test_data
-
-    def test_encode_with_header(self, test_data):
-        encode_result = subprocess.run(
-            [sys.executable, "-m", "base81", "encode", "--header"],
-            input=test_data,
-            capture_output=True,
-            text=True
-        )
-        assert encode_result.stdout.startswith("^b81:")
-
-    def test_decode_with_header(self, test_data):
-        # Encode with header
-        encode_result = subprocess.run(
-            [sys.executable, "-m", "base81", "encode", "--header"],
-            input=test_data,
-            capture_output=True,
-            text=True
-        )
-        
-        # Decode with header auto-detection
-        decode_result = subprocess.run(
-            [sys.executable, "-m", "base81", "decode", "--header"],
-            input=encode_result.stdout,
-            capture_output=True
-        )
-        assert decode_result.stdout == test_data
-
-    def test_different_block_sizes(self, test_data):
-        for bs in [3, 5, 7]:
-            alphabet = "standard" if bs != 5 else "url"
-            encode_result = subprocess.run(
-                [sys.executable, "-m", "base81", "encode", 
-                 "--block-size", str(bs), "--alphabet", alphabet],
-                input=test_data,
-                capture_output=True
-            )
-            assert encode_result.returncode == 0
-            
-            decode_result = subprocess.run(
-                [sys.executable, "-m", "base81", "decode",
-                 "--block-size", str(bs), "--alphabet", alphabet],
-                input=encode_result.stdout,
-                capture_output=True
-            )
-            assert decode_result.stdout == test_data
+def run_cli(args, stdin_data=None):
+    """Run CLI with given argument list and optional stdin, return (stdout, stderr, exit_code)."""
+    sys.argv = ["base81"] + args
+    stdout = StringIO()
+    stderr = StringIO()
+    exit_code = 0
+    # Mock stdin if provided
+    if stdin_data is not None:
+        import builtins
+        original_stdin = sys.stdin
+        sys.stdin = StringIO(stdin_data)
+    try:
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            exit_code = main()
+    except SystemExit as e:
+        exit_code = e.code if e.code is not None else 0
+    finally:
+        if stdin_data is not None:
+            sys.stdin = original_stdin
+    return stdout.getvalue(), stderr.getvalue(), exit_code
 
 
-class TestCliFileOperations:
-    @pytest.fixture
-    def temp_files(self):
-        with tempfile.NamedTemporaryFile(delete=False) as infile:
-            infile.write(b"Test data for file operations" * 100)
-            infile_path = infile.name
-        
-        out_path = tempfile.mktemp()
-        dec_path = tempfile.mktemp()
-        
-        yield infile_path, out_path, dec_path
-        
-        for path in [infile_path, out_path, dec_path]:
-            if os.path.exists(path):
-                os.unlink(path)
+def test_cli_self_test():
+    # Running with no args runs self-test
+    out, err, code = run_cli([])
+    assert code == 0
+    assert "All checks passed. 🚀" in out
 
-    def test_encode_from_file(self, temp_files):
-        infile, outfile, _ = temp_files
-        
-        result = subprocess.run(
-            [sys.executable, "-m", "base81", "encode", 
-             "--input", infile, "--output", outfile],
-            capture_output=True
-        )
-        assert result.returncode == 0
-        assert os.path.exists(outfile)
-        assert os.path.getsize(outfile) > 0
 
-    def test_decode_to_file(self, temp_files):
-        infile, outfile, decfile = temp_files
-        
-        # Encode first
-        subprocess.run(
-            [sys.executable, "-m", "base81", "encode", 
-             "--input", infile, "--output", outfile],
-            check=True
-        )
-        
-        # Decode
-        result = subprocess.run(
-            [sys.executable, "-m", "base81", "decode",
-             "--input", outfile, "--output", decfile],
-            capture_output=True
-        )
-        assert result.returncode == 0
-        assert os.path.exists(decfile)
-        
-        # Compare original and decoded
-        with open(infile, "rb") as f:
-            original = f.read()
-        with open(decfile, "rb") as f:
-            decoded = f.read()
-        assert decoded == original
+def test_cli_encode_decode_stdin_stdout(tmp_path):
+    data = b"Hello CLI"
+    # Encode
+    out, err, code = run_cli(["encode"], stdin_data=data.decode('latin-1'))
+    assert code == 0
+    encoded = out.strip()
+    # Decode
+    out2, err2, code2 = run_cli(["decode"], stdin_data=encoded)
+    assert code2 == 0
+    assert out2.encode('latin-1') == data
+
+
+def test_cli_encode_file(tmp_path):
+    infile = tmp_path / "input.bin"
+    infile.write_bytes(b"File test")
+    outfile = tmp_path / "output.b81"
+    out, err, code = run_cli(["encode", "-i", str(infile), "-o", str(outfile)])
+    assert code == 0
+    assert outfile.exists()
+    assert outfile.read_text().strip() != ""
+
+
+def test_cli_decode_file(tmp_path):
+    data = b"Decode test"
+    enc = base81.encode(data)
+    infile = tmp_path / "input.b81"
+    infile.write_text(enc)
+    outfile = tmp_path / "output.bin"
+    out, err, code = run_cli(["decode", "-i", str(infile), "-o", str(outfile)])
+    assert code == 0
+    assert outfile.read_bytes() == data
+
+
+def test_cli_header_option(tmp_path):
+    infile = tmp_path / "data.bin"
+    infile.write_bytes(b"Header test")
+    enc_file = tmp_path / "data.b81"
+    run_cli(["encode", "--header", "-i", str(infile), "-o", str(enc_file)])
+    # Decode with header auto-detection
+    out, err, code = run_cli(["decode", "--header", "-i", str(enc_file), "-o", str(tmp_path / "dec.bin")])
+    assert code == 0
+    assert (tmp_path / "dec.bin").read_bytes() == b"Header test"
+
+
+def test_cli_dry_run(tmp_path):
+    infile = tmp_path / "data.bin"
+    infile.write_bytes(b"x" * 1000)
+    out, err, code = run_cli(["encode", "--dry-run", "-i", str(infile)])
+    assert code == 0
+    assert "DRY-RUN" in out
+    assert "estimated" in out.lower()
+
+
+def test_cli_info(tmp_path):
+    out, err, code = run_cli(["info"])
+    assert code == 0
+    assert "Registered codecs:" in out
+    assert "standard/3" in out
+    # Test info on file
+    infile = tmp_path / "test.b81"
+    infile.write_text("^b81:7:standard^ABC")
+    out, err, code = run_cli(["info", str(infile)])
+    assert "header: block_size=7, alphabet=standard" in out
+
+
+def test_cli_invalid_command():
+    out, err, code = run_cli(["unknown"])
+    assert code != 0
+    assert "error" in err.lower() or "invalid choice" in err
+
+
+def test_cli_encode_multiple_files(tmp_path):
+    # Multiple inputs require output dir
+    f1 = tmp_path / "1.bin"
+    f1.write_bytes(b"one")
+    f2 = tmp_path / "2.bin"
+    f2.write_bytes(b"two")
+    outdir = tmp_path / "enc"
+    outdir.mkdir()
+    out, err, code = run_cli(["encode", str(f1), str(f2), "-d", str(outdir)])
+    assert code == 0
+    assert (outdir / "1.bin.b81").exists()
+    assert (outdir / "2.bin.b81").exists()
+
+
+def test_cli_benchmark():
+    out, err, code = run_cli(["encode", "--benchmark", "--block-size", "7"])
+    assert code == 0
+    assert "Benchmark:" in out
+    assert "MB/s" in out

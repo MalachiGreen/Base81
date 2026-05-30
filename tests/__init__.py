@@ -1,1 +1,1 @@
-"""Unit tests for Base81/62 codec."""
+# Test suite for Base81 package
