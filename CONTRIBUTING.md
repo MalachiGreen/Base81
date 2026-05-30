@@ -1,5 +1,7 @@
 # Contributing to Base81/62
 
+![Icon](graphics/repo_icon/flat/flat_icon_medium.jpg)
+
 ## Quick Start
 
 ```bash
