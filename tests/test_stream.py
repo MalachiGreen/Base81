@@ -35,13 +35,10 @@ def test_encoder_input_limit():
 
 
 def test_decoder_buffer_limit():
-    # Need max_buffer >= fk + max_tail. For standard/7: fk=9, max_tail=8 => need >=17
-    dec = Decoder(block_size=7, alphabet_type="standard", max_buffer=10)  # too small
     with pytest.raises(ValidationError, match="max_buffer too small"):
         Decoder(block_size=7, alphabet_type="standard", max_buffer=10)
-    # Valid, then exceed
+    
     dec = Decoder(block_size=7, alphabet_type="standard", max_buffer=20)
-    # Feed enough chars to exceed buffer
     long_str = "A" * 30
     with pytest.raises(BoundaryError, match="buffer limit exceeded"):
         dec.update(long_str)

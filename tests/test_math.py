@@ -23,8 +23,8 @@ def test_int_to_radix_overflow():
 
 def test_radix_to_int_invalid_char():
     cfg = LOOKUPS["standard"]
-    with pytest.raises(ValidationError, match="character '?' not in alphabet"):
-        radix_to_int("?123", cfg, 4)
+    with pytest.raises(ValidationError, match="character '\\^' not in alphabet"):
+        radix_to_int("^123", cfg, 4)  # '^' not in standard alphabet
 
 
 def test_radix_to_int_wrong_length():

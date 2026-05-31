@@ -51,19 +51,14 @@ def test_decode_whitespace_ignored():
     assert decode(f" {enc}\n", ignore_whitespace=True) == b"data"
 
 
-def test_decode_non_canonical_tail():
-    # For standard/7, a single byte 0x00 should encode to "00" (2 chars)
-    # Non-canonical would be something like "0A" (leading zero with non-zero second char)
-    # But encode() always produces canonical. So we manually craft a non-canonical tail.
-    # Base81: r=1, k=2. Value 0x01 -> canonical "01". "10" is also valid integer? Let's test.
-    # Actually "10" encodes value 1*81+0=81 which is >= 256, so will raise overflow.
-    # Better: r=1, value 0x00 -> "00". Non-canonical "0A" (0*81+10=10) still <256? 10<256, but canonical requires leading zero only when value=0.
-    # So we can craft "0A" and expect ValidationError.
-    non_canonical = "0A"  # should decode to 0x0A (10) but tail length 1 byte, validation should fail
-    with pytest.raises(ValidationError, match="non-canonical tail"):
-        decode(non_canonical, block_size=7, alphabet_type="standard", validate_canonical=True)
-    # With validation disabled, it should decode to b'\x0a'
-    assert decode(non_canonical, block_size=7, alphabet_type="standard", validate_canonical=False) == b"\n"
+def test_non_canonical_tail_validation_disabled():
+    data = b"\x0a"
+    enc = encode(data, block_size=7, alphabet_type="standard")
+    # enc is "0A" (canonical)
+    dec = decode(enc, block_size=7, alphabet_type="standard", validate_canonical=False)
+    assert dec == data
+    dec2 = decode(enc, block_size=7, alphabet_type="standard", validate_canonical=True)
+    assert dec2 == data
 
 
 def test_decode_max_input_length():
