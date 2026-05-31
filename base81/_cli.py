@@ -790,38 +790,42 @@ def cmd_decode(args: argparse.Namespace) -> int:
         print("base81: error: with multiple inputs, use -d/--output-dir", file=sys.stderr)
         return 1
 
-    # Sequential processing
+    # Sequential processing over multiple input files
     for idx, inpath in enumerate(inputs):
         total = _get_file_size(inpath) if inpath != "-" else None
         progress = ProgressIndicator(total=total, quiet=args.quiet)
         try:
             with _open_input(inpath, binary=False) as f:
                 if args.stream and total and total > 1024 * 1024:
+                    # ---------- STREAMING BRANCH (constant memory) ----------
                     peek = f.read(1024)
                     if not peek:
                         progress.finish()
                         continue
 
-                    bs = args.block_size or 7
-                    alpha = args.alphabet or "standard"
+                    # Use separate variables for streaming branch to avoid redefinition
+                    bs_stream: int = args.block_size or 7
+                    alpha_stream: str = args.alphabet or "standard"
                     payload_start = 0
 
+                    # Detect header if requested
                     if args.header and '^b81:' in peek:
                         start = peek.find('^b81:')
                         end = peek.find('^', start + 1)
                         if end != -1:
                             header = peek[start:end+1]
-                            bs, alpha, _ = parse_header(header)
+                            bs_stream, alpha_stream, _ = parse_header(header)
                             payload_start = end + 1
 
                     decoder = StreamingDecoder(
-                        block_size=bs,
-                        alphabet_type=alpha,
+                        block_size=bs_stream,
+                        alphabet_type=alpha_stream,
                         ignore_whitespace=args.ignore_ws,
                         validate_canonical=not args.no_canonical_check,
                         buffer_size=args.buffer_size or 65536
                     )
 
+                    # Determine output destination
                     if args.output_dir:
                         outpath = os.path.join(args.output_dir, os.path.basename(inpath) + ".bin")
                         if not args.force and os.path.exists(outpath):
@@ -832,11 +836,13 @@ def cmd_decode(args: argparse.Namespace) -> int:
                         outf = _open_output(args.output, binary=True, dry_run=False).__enter__()
 
                     try:
+                        # Process the remainder of the peek buffer (after header)
                         if payload_start < len(peek):
                             out_data = decoder.update(peek[payload_start:])
                             if out_data:
                                 outf.write(out_data)
 
+                        # Stream the rest of the file in chunks
                         chunk_size = args.buffer_size or 65536
                         while True:
                             chunk = f.read(chunk_size)
@@ -848,6 +854,7 @@ def cmd_decode(args: argparse.Namespace) -> int:
                             if out_data:
                                 outf.write(out_data)
 
+                        # Finalize
                         out_data = decoder.finalize()
                         if out_data:
                             outf.write(out_data)
@@ -859,9 +866,10 @@ def cmd_decode(args: argparse.Namespace) -> int:
 
                     progress.finish()
                 else:
-                    # Non‑streaming branch
+                    # ---------- NON‑STREAMING BRANCH ----------
                     text = f.read()
                     progress.update(len(text))
+                    # Use Optional types; no redefinition with streaming branch
                     bs: Optional[int] = args.block_size
                     alpha: Optional[str] = args.alphabet
                     payload = text
@@ -875,7 +883,7 @@ def cmd_decode(args: argparse.Namespace) -> int:
                         if not args.quiet:
                             print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
                         return 1
-                    # mypy needs assertion to narrow type
+                    # mypy needs an assertion to narrow the type
                     assert bs is not None and alpha is not None
                     result = decode(payload,
                                     ignore_whitespace=args.ignore_ws,
