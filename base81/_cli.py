@@ -863,21 +863,24 @@ def cmd_decode(args: argparse.Namespace) -> int:
                     # ---------- NON‑STREAMING BRANCH ----------
                     text = f.read()
                     progress.update(len(text))
+                    payload = text
                     bs: Optional[int] = args.block_size
                     alpha: Optional[str] = args.alphabet
-                    payload = text
                     if args.header:
+                        bs_h: int
+                        alpha_h: str
                         bs_h, alpha_h, payload = parse_header(text)
                         if bs is None:
-                            bs = cast(int, bs_h)
+                            bs = bs_h
                         if alpha is None:
-                            alpha = cast(str, alpha_h)
+                            alpha = alpha_h
                     if bs is None or alpha is None:
                         if not args.quiet:
                             print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
                         return 1
-                    # Help mypy narrow the types
-                    assert isinstance(bs, int) and isinstance(alpha, str)
+                    # Narrow types for mypy
+                    assert isinstance(bs, int)
+                    assert isinstance(alpha, str)
                     result = decode(payload,
                                     ignore_whitespace=args.ignore_ws,
                                     validate_canonical=not args.no_canonical_check,
