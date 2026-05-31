@@ -19,11 +19,12 @@ Validation checks:
 """
 
 import types
+from typing import Dict, Tuple, List, Any, Mapping
 from ._alphabet import ALPHABET_STANDARD, ALPHABET_URL
 from ._math import POW
 from ._exceptions import CodecError
 
-_LOOKUPS = {
+_LOOKUPS: Dict[str, Dict[str, Any]] = {
     "standard": {
         "base": 81,
         "to_char": ALPHABET_STANDARD,
@@ -36,9 +37,11 @@ _LOOKUPS = {
     },
 }
 
-_CODECS = {}
+_CODECS: Dict[Tuple[str, int], Dict[str, Any]] = {}
 
-def _add(alpha, bs, fn, fk, te, td):
+
+def _add(alpha: str, bs: int, fn: int, fk: int,
+         te: Dict[int, int], td: Dict[int, int]) -> None:
     radix = _LOOKUPS[alpha]["base"]
     if POW[radix][fk] < POW[256][fn]:
         raise CodecError("headroom fail")
@@ -48,16 +51,21 @@ def _add(alpha, bs, fn, fk, te, td):
         if POW[radix][k] < POW[256][r] or td[k] != r:
             raise CodecError("tail bijection fail")
     _CODECS[(alpha, bs)] = {
-        "radix": radix, "full_n": fn, "full_k": fk,
-        "tail_enc": dict(te), "tail_dec": dict(td),
+        "radix": radix,
+        "full_n": fn,
+        "full_k": fk,
+        "tail_enc": dict(te),
+        "tail_dec": dict(td),
         "max_tail": max(td) if td else 0,
     }
+
 
 # Codec: Base81, 3-byte blocks (fixed mapping, no dynamic tails needed)
 _add("standard", 3, 3, 4, {1: 2, 2: 3}, {2: 1, 3: 2})
 
 # Codec: Base81, 7-byte blocks
-t7e, t7d = {}, {}
+t7e: Dict[int, int] = {}
+t7d: Dict[int, int] = {}
 for r in range(1, 7):
     k = 1
     while POW[81][k] < POW[256][r]:
@@ -66,7 +74,8 @@ for r in range(1, 7):
 _add("standard", 7, 7, 9, t7e, t7d)
 
 # Codec: Base62, 5-byte blocks
-t5e, t5d = {}, {}
+t5e: Dict[int, int] = {}
+t5d: Dict[int, int] = {}
 for r in range(1, 5):
     k = 1
     while POW[62][k] < POW[256][r]:
@@ -74,14 +83,15 @@ for r in range(1, 5):
     t5e[r], t5d[k] = k, r
 _add("url", 5, 5, 7, t5e, t5d)
 
-CODECS = types.MappingProxyType(_CODECS)
-LOOKUPS = types.MappingProxyType(_LOOKUPS)
+CODECS: Mapping[Tuple[str, int], Dict[str, Any]] = types.MappingProxyType(_CODECS)
+LOOKUPS: Mapping[str, Dict[str, Any]] = types.MappingProxyType(_LOOKUPS)
 
-def get_codec(alpha, bs):
+
+def get_codec(alpha: str, bs: int) -> Dict[str, Any] | None:
     """Return codec config or None if not registered."""
     return CODECS.get((alpha, bs))
 
 
-def list_codecs():
+def list_codecs() -> List[Tuple[str, int]]:
     """Return list of registered (alphabet_type, block_size) tuples."""
     return list(CODECS.keys())

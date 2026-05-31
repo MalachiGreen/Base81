@@ -21,13 +21,15 @@ Tail canonicalization:
 - Prevents malicious inputs like "A" decoding to 0x00 0x00 ... 0x01
 """
 
+from typing import Optional
 from ._codecs import CODECS, LOOKUPS
 from ._math import int_to_radix, radix_to_int, bytes_to_int, int_to_bytes, POW
 from ._alphabet import _WS_REMOVE_TABLE
 from ._exceptions import ValidationError, CorruptStreamError, BoundaryError
 
 
-def encode(data, *, line_width=None, block_size=7, alphabet_type="standard"):
+def encode(data: bytes, *, line_width: Optional[int] = None,
+           block_size: int = 7, alphabet_type: str = "standard") -> str:
     """Encode bytes to base-N string."""
     if not isinstance(data, (bytes, bytearray)):
         raise TypeError("bytes required")
@@ -54,8 +56,9 @@ def encode(data, *, line_width=None, block_size=7, alphabet_type="standard"):
     return payload
 
 
-def decode(s, *, ignore_whitespace=False, validate_canonical=True,
-           block_size=7, max_input_length=None, alphabet_type="standard"):
+def decode(s: str, *, ignore_whitespace: bool = False, validate_canonical: bool = True,
+           block_size: int = 7, max_input_length: Optional[int] = None,
+           alphabet_type: str = "standard") -> bytes:
     """Decode base-N string to bytes."""
     if not isinstance(s, str):
         raise TypeError("str required")

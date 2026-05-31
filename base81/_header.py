@@ -17,6 +17,7 @@ Parsing:
 Used when --header flag is passed to CLI, allowing automatic codec detection.
 """
 
+from typing import Tuple
 from ._codecs import CODECS, LOOKUPS
 from ._exceptions import ValidationError
 
@@ -24,12 +25,12 @@ PREFIX = "^b81:"
 SUFFIX = "^"
 
 
-def make_header(block_size, alphabet_type):
+def make_header(block_size: int, alphabet_type: str) -> str:
     """Create header string for given codec."""
     return f"{PREFIX}{block_size}:{alphabet_type}{SUFFIX}"
 
 
-def parse_header(s):
+def parse_header(s: str) -> Tuple[int, str, str]:
     """Extract (block_size, alphabet_type, payload) from header-prefixed string."""
     stripped = s.lstrip(' \t\n\r')
     if not stripped.startswith(PREFIX):

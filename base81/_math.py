@@ -19,31 +19,37 @@ Invariants:
 """
 
 import types
+from typing import Dict, List, Any, Union, Mapping
 from ._exceptions import CodecError, ValidationError, CorruptStreamError
 
-_STATIC_POW = {}
 
-def _build(base, n):
+def _build(base: int, n: int) -> List[int]:
     t = [1]
     for _ in range(n):
         t.append(t[-1] * base)
     return t
 
-_STATIC_POW[81] = _build(81, 16)
-_STATIC_POW[62] = _build(62, 16)
-_STATIC_POW[256] = _build(256, 16)
 
-POW = types.MappingProxyType(_STATIC_POW)
+_POW81: List[int] = _build(81, 16)
+_POW62: List[int] = _build(62, 16)
+_POW256: List[int] = _build(256, 16)
+
+_STATIC_POW: Dict[int, List[int]] = {
+    81: _POW81,
+    62: _POW62,
+    256: _POW256,
+}
+POW: Mapping[int, List[int]] = types.MappingProxyType(_STATIC_POW)
 
 
-def int_to_radix(value, out_len, alpha_cfg):
+def int_to_radix(value: int, out_len: int, alpha_cfg: Dict[str, Any]) -> str:
     """Convert integer to base-N string with fixed length."""
     if value < 0:
         raise CodecError("negative value")
     radix = alpha_cfg["base"]
     if value >= POW[radix][out_len]:
         raise CorruptStreamError("overflow")
-    chars = [None] * out_len
+    chars: List[str] = [''] * out_len
     idx = out_len - 1
     ac = alpha_cfg["to_char"]
     while idx >= 0:
@@ -53,7 +59,7 @@ def int_to_radix(value, out_len, alpha_cfg):
     return ''.join(chars)
 
 
-def radix_to_int(s, alpha_cfg, expected_len):
+def radix_to_int(s: str, alpha_cfg: Dict[str, Any], expected_len: int) -> int:
     """Convert base-N string to integer, validating length and characters."""
     if len(s) != expected_len:
         raise CorruptStreamError("length mismatch")
@@ -67,12 +73,12 @@ def radix_to_int(s, alpha_cfg, expected_len):
     return val
 
 
-def bytes_to_int(data):
+def bytes_to_int(data: bytes) -> int:
     """Convert big-endian bytes to integer."""
     return int.from_bytes(data, 'big')
 
 
-def int_to_bytes(value, length):
+def int_to_bytes(value: int, length: int) -> bytes:
     """Convert integer to big-endian bytes of fixed length."""
     if value >= (1 << (8 * length)):
         raise ValueError("value too large")

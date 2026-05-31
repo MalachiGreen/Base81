@@ -91,7 +91,7 @@ import signal
 import time
 import os
 import json
-from typing import Optional, BinaryIO, TextIO, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple, BinaryIO, TextIO
 from contextlib import contextmanager
 from ._api import encode, decode
 from ._header import make_header, parse_header
@@ -199,7 +199,7 @@ class ProgressIndicator:
         self.start_time = time.time()
         self._last_update = 0.0
 
-    def update(self, delta: int):
+    def update(self, delta: int) -> None:
         if self.quiet:
             return
         self.processed += delta
@@ -208,7 +208,7 @@ class ProgressIndicator:
             self._last_update = now
             self._display()
 
-    def _display(self):
+    def _display(self) -> None:
         if self.total:
             pct = (self.processed / self.total) * 100
             elapsed = time.time() - self.start_time
@@ -227,7 +227,7 @@ class ProgressIndicator:
         if self.processed == self.total:
             sys.stderr.write("\n")
 
-    def finish(self):
+    def finish(self) -> None:
         if not self.quiet and self.processed > 0:
             self._display()
 
@@ -240,7 +240,7 @@ def _get_file_size(path: Optional[str]) -> Optional[int]:
 # Streaming classes
 class StreamingEncoder:
     def __init__(self, block_size: int = 7, alphabet_type: str = "standard",
-                 line_width: Optional[int] = None, buffer_size: int = 64 * 1024):
+                 line_width: Optional[int] = None, buffer_size: int = 64 * 1024) -> None:
         from ._stream import Encoder
         self._encoder = Encoder(block_size=block_size, alphabet_type=alphabet_type)
         self.line_width = line_width
@@ -270,7 +270,7 @@ class StreamingEncoder:
         return ""
 
     def encode_stream(self, input_file: BinaryIO, output_file: TextIO,
-                      progress: Optional[ProgressIndicator] = None):
+                      progress: Optional[ProgressIndicator] = None) -> None:
         while True:
             chunk = input_file.read(self.buffer_size)
             if not chunk:
@@ -302,7 +302,7 @@ class StreamingEncoder:
 class StreamingDecoder:
     def __init__(self, block_size: int = 7, alphabet_type: str = "standard",
                  ignore_whitespace: bool = False, validate_canonical: bool = True,
-                 buffer_size: int = 64 * 1024):
+                 buffer_size: int = 64 * 1024) -> None:
         from ._stream import Decoder
         self._decoder = Decoder(
             block_size=block_size,
@@ -313,7 +313,7 @@ class StreamingDecoder:
         self.buffer_size = buffer_size
 
     def decode_stream(self, input_file: TextIO, output_file: BinaryIO,
-                      progress: Optional[ProgressIndicator] = None):
+                      progress: Optional[ProgressIndicator] = None) -> None:
         while True:
             chunk = input_file.read(self.buffer_size)
             if not chunk:
@@ -331,7 +331,7 @@ class StreamingDecoder:
             
             
 # Benchmark
-def _run_benchmark(block_size: int, alphabet_type: str, size_mb: int = 10):
+def _run_benchmark(block_size: int, alphabet_type: str, size_mb: int = 10) -> None:
     data = os.urandom(size_mb * 1024 * 1024)
     print(f"Benchmark: {size_mb}MB random data")
     print(f"Codec: {alphabet_type}/{block_size}\n")
@@ -359,7 +359,7 @@ def _run_benchmark(block_size: int, alphabet_type: str, size_mb: int = 10):
 
 
 # Completion
-def cmd_completion(args):
+def cmd_completion(args: argparse.Namespace) -> int:
     """Handle shell completion via argcomplete."""
     if argcomplete is None:
         print("base81: argcomplete not installed. Run: pip install argcomplete", file=sys.stderr)
@@ -526,7 +526,7 @@ Requires: pip install argcomplete
     }
     return helps.get(subcommand, f"No detailed help for '{subcommand}'")
 
-def cmd_help(args):
+def cmd_help(args: argparse.Namespace) -> int:
     if args.command:
         print(_detailed_help(args.command))
     else:
@@ -536,7 +536,7 @@ def cmd_help(args):
 
 
 # Argument parser
-def _create_parser():
+def _create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="base81",
         description="Binary-to-text encoding with 81/62 character alphabets",
@@ -608,7 +608,7 @@ Examples:
 
 
 # Command implementations
-def cmd_encode(args):
+def cmd_encode(args: argparse.Namespace) -> int:
     # Load config
     config = load_config(args.config)
     args = merge_config(args, config)
@@ -748,7 +748,7 @@ def cmd_encode(args):
     return 0
 
 
-def cmd_decode(args):
+def cmd_decode(args: argparse.Namespace) -> int:
     config = load_config(args.config)
     args = merge_config(args, config)
     
@@ -853,7 +853,7 @@ def cmd_decode(args):
     return 0
 
 
-def cmd_info(args):
+def cmd_info(args: argparse.Namespace) -> int:
     from ._codecs import list_codecs, CODECS
     print(f"base81 {__version__}")
     print(f"Python {sys.version}")
@@ -885,7 +885,7 @@ def cmd_info(args):
 
 
 # Main
-def main():
+def main() -> int:
     signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(130))
     parser = _create_parser()
     

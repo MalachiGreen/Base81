@@ -26,6 +26,7 @@ Whitespace handling:
 """
 
 from collections import deque
+from typing import Optional, Dict, Any, Deque
 from ._codecs import CODECS, LOOKUPS
 from ._math import int_to_radix, radix_to_int, bytes_to_int, int_to_bytes, POW
 from ._alphabet import _WS_REMOVE_TABLE
@@ -34,9 +35,10 @@ from ._exceptions import ValidationError, CorruptStreamError, BoundaryError
 
 class Encoder:
     """Streaming encoder with buffer limits."""
-    
-    def __init__(self, *, block_size=7, alphabet_type="standard",
-                 max_input_length=None, max_buffer=1048576):
+
+    def __init__(self, *, block_size: int = 7, alphabet_type: str = "standard",
+                 max_input_length: Optional[int] = None,
+                 max_buffer: int = 1048576) -> None:
         cfg = CODECS.get((alphabet_type, block_size))
         if cfg is None:
             raise ValidationError(f"unknown codec")
@@ -52,11 +54,11 @@ class Encoder:
         self._max_input = max_input_length
         self._max_buf = max_buffer
 
-    def diagnostics(self):
+    def diagnostics(self) -> Dict[str, int]:
         """Return internal state: buffer_len, total_bytes processed."""
         return {"buffer_len": len(self._buf), "total_bytes": self._total}
 
-    def update(self, data):
+    def update(self, data: bytes) -> str:
         """Process more input bytes, return encoded chars (may be empty)."""
         if not isinstance(data, (bytes, bytearray)):
             raise TypeError("bytes required")
@@ -74,10 +76,12 @@ class Encoder:
             return ""
         chunk = self._buf[:ready]
         self._buf = self._buf[ready:]
-        return ''.join(int_to_radix(bytes_to_int(chunk[i:i+fn]), fk, self._ac)
-                       for i in range(0, ready, fn))
+        return ''.join(
+            int_to_radix(bytes_to_int(chunk[i:i+fn]), fk, self._ac)
+            for i in range(0, ready, fn)
+        )
 
-    def finalize(self):
+    def finalize(self) -> str:
         """Flush remaining bytes, return final encoded chars."""
         if not self._buf:
             return ""
@@ -90,10 +94,10 @@ class Encoder:
 
 class Decoder:
     """Streaming decoder with buffer limits and canonical validation."""
-    
-    def __init__(self, *, ignore_whitespace=False, validate_canonical=True,
-                 block_size=7, max_input_length=None, max_buffer=1048576,
-                 alphabet_type="standard"):
+
+    def __init__(self, *, ignore_whitespace: bool = False, validate_canonical: bool = True,
+                 block_size: int = 7, max_input_length: Optional[int] = None,
+                 max_buffer: int = 1048576, alphabet_type: str = "standard") -> None:
         cfg = CODECS.get((alphabet_type, block_size))
         if cfg is None:
             raise ValidationError(f"unknown codec")
@@ -108,7 +112,7 @@ class Decoder:
 
         self._cfg = cfg
         self._ac = LOOKUPS[alphabet_type]
-        self._chunks = deque()
+        self._chunks: Deque[str] = deque()
         self._buf_len = 0
         self._work = ""
         self._ignore_ws = ignore_whitespace
@@ -121,7 +125,7 @@ class Decoder:
         self._max_input = max_input_length
         self._max_buf = max_buffer
 
-    def diagnostics(self):
+    def diagnostics(self) -> Dict[str, Any]:
         """Return internal state: buffer_len, total_chars, chunks pending."""
         return {
             "buffer_len": self._buf_len + len(self._work),
@@ -129,7 +133,7 @@ class Decoder:
             "chunks": len(self._chunks),
         }
 
-    def update(self, s):
+    def update(self, s: str) -> bytes:
         """Process more input chars, return decoded bytes (may be empty)."""
         if not isinstance(s, str):
             raise TypeError("str required")
@@ -178,7 +182,7 @@ class Decoder:
 
         return bytes(out)
 
-    def finalize(self):
+    def finalize(self) -> bytes:
         """Flush remaining chars, validate tail, return final decoded bytes."""
         out = bytearray()
         buf = self._work + ''.join(self._chunks)

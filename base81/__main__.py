@@ -1,3 +1,5 @@
+# mypy: ignore-errors
+
 # Copyright (c) 2026 Malachi Green
 # SPDX-License-Identifier: MIT
 
