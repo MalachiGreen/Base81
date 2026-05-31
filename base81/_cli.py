@@ -728,7 +728,10 @@ def cmd_encode(args: argparse.Namespace) -> int:
                         _open_output(args.output, binary=False, dry_run=False).__exit__(None, None, None)
             else:
                 with _open_input(inpath) as f:
-                    data = f.read()
+                    raw_data = f.read()
+                if not isinstance(raw_data, bytes):
+                    raise TypeError(f"Expected bytes, got {type(raw_data).__name__}")
+                data = raw_data
                 progress.update(len(data))
                 result = encode(data, block_size=args.block_size, alphabet_type=args.alphabet,
                                 line_width=args.line_width)
