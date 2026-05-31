@@ -151,20 +151,16 @@ def merge_config(args: argparse.Namespace, config: Dict[str, Any]) -> argparse.N
             setattr(args, key, value)
     return args
     
-    
-# Helpers
+
 @contextmanager
 def _open_input(path: Optional[str], binary: bool = True) -> Generator[Any, None, None]:
     if not path or path == "-":
-        # For testing compatibility: sys.stdin may be replaced with StringIO,
-        # but we need to access buffer only if available and binary mode requested.
         if binary and hasattr(sys.stdin, 'buffer'):
             yield sys.stdin.buffer
         elif binary:
-            # In test environment with StringIO, fall back to reading bytes from .read()
-            # This is a workaround; tests should use subprocess, but kept for robustness.
+            # fallback for tests
             class FakeBinary:
-                def read(self, size=-1) -> None:
+                def read(self, size: int = -1) -> bytes:
                     data = sys.stdin.read()
                     return data.encode('utf-8') if isinstance(data, str) else data
             yield FakeBinary()
@@ -243,6 +239,14 @@ class StreamingEncoder:
         self._line_buffer: List[str] = []
         self._line_len = 0
 
+    def update(self, data: bytes) -> str:
+        """Forward to internal encoder (for compatibility with streaming API)."""
+        return self._encoder.update(data)
+
+    def finalize(self) -> str:
+        """Forward to internal encoder."""
+        return self._encoder.finalize()
+
     def _apply_line_wrapping(self, text: str) -> str:
         if not self.line_width:
             return text
@@ -306,6 +310,14 @@ class StreamingDecoder:
             validate_canonical=validate_canonical
         )
         self.buffer_size = buffer_size
+
+    def update(self, s: str) -> bytes:
+        """Forward to internal decoder."""
+        return self._decoder.update(s)
+
+    def finalize(self) -> bytes:
+        """Forward to internal decoder."""
+        return self._decoder.finalize()
 
     def decode_stream(self, input_file: TextIO, output_file: BinaryIO,
                       progress: Optional[ProgressIndicator] = None) -> None:
@@ -879,8 +891,9 @@ def cmd_decode(args: argparse.Namespace) -> int:
                     # ---------- NON‑STREAMING BRANCH ----------
                     text = f.read()
                     progress.update(len(text))
-                    bs: Optional[int] = args.block_size
-                    alpha: Optional[str] = args.alphabet
+                    # Remove type annotations to avoid redefinition errors
+                    bs = args.block_size
+                    alpha = args.alphabet
                     payload = text
                     if args.header:
                         bs, alpha, payload = parse_header(text)
