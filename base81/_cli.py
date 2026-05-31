@@ -91,7 +91,6 @@ import signal
 import time
 import os
 import json
-import tempfile
 from typing import Optional, BinaryIO, TextIO, List, Dict, Any
 from contextlib import contextmanager
 from ._api import encode, decode
@@ -162,7 +161,20 @@ def merge_config(args: argparse.Namespace, config: Dict[str, Any]) -> argparse.N
 @contextmanager
 def _open_input(path: Optional[str], binary: bool = True):
     if not path or path == "-":
-        yield sys.stdin.buffer if binary else sys.stdin
+        # For testing compatibility: sys.stdin may be replaced with StringIO,
+        # but we need to access buffer only if available and binary mode requested.
+        if binary and hasattr(sys.stdin, 'buffer'):
+            yield sys.stdin.buffer
+        elif binary:
+            # In test environment with StringIO, fall back to reading bytes from .read()
+            # This is a workaround; tests should use subprocess, but kept for robustness.
+            class FakeBinary:
+                def read(self, size=-1):
+                    data = sys.stdin.read()
+                    return data.encode('utf-8') if isinstance(data, str) else data
+            yield FakeBinary()
+        else:
+            yield sys.stdin
     else:
         mode = "rb" if binary else "r"
         with open(path, mode) as f:
@@ -651,6 +663,7 @@ def cmd_encode(args):
         print("base81: error: with multiple inputs, use -d/--output-dir", file=sys.stderr)
         return 1
 
+    # Parallel execution
     if args.jobs and args.jobs > 1 and len(inputs) > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
         def encode_one(inpath):
@@ -677,33 +690,63 @@ def cmd_encode(args):
                     print(res)
         return 0
 
-    inpath = inputs[0]
-    total = _get_file_size(inpath) if inpath != "-" else None
-    progress = ProgressIndicator(total=total, quiet=args.quiet)
-    try:
-        if args.stream and total and total > 10*1024*1024:
-            enc = StreamingEncoder(args.block_size, args.alphabet, args.line_width, args.buffer_size or 65536)
-            with _open_input(inpath) as inf:
-                with _open_output(args.output, binary=False, dry_run=False) as outf:
-                    enc.encode_stream(inf, outf, progress)
-        else:
-            with _open_input(inpath) as f:
-                data = f.read()
-            progress.update(len(data))
-            result = encode(data, block_size=args.block_size, alphabet_type=args.alphabet,
-                            line_width=args.line_width)
-            if args.header:
-                result = make_header(args.block_size, args.alphabet) + result
-            with _open_output(args.output, binary=False, dry_run=False) as outf:
-                outf.write(result)
-                if not result.endswith('\n'):
-                    outf.write('\n')
+    # Sequential processing (single file or multiple with output_dir)
+    for idx, inpath in enumerate(inputs):
+        total = _get_file_size(inpath) if inpath != "-" else None
+        progress = ProgressIndicator(total=total, quiet=args.quiet)
+        try:
+            if args.stream and total and total > 10*1024*1024:
+                enc = StreamingEncoder(args.block_size, args.alphabet, args.line_width, args.buffer_size or 65536)
+                with _open_input(inpath) as inf:
+                    # Determine output destination for this file
+                    if args.output_dir:
+                        outpath = os.path.join(args.output_dir, os.path.basename(inpath) + ".b81")
+                        if not args.force and os.path.exists(outpath):
+                            print(f"base81: {outpath} exists (use -f)", file=sys.stderr)
+                            return 1
+                        with open(outpath, "w") as outf:
+                            enc.encode_stream(inf, outf, progress)
+                    else:
+                        with _open_output(args.output, binary=False, dry_run=False) as outf:
+                            # If multiple inputs and writing to stdout, separate with comments
+                            if len(inputs) > 1:
+                                outf.write(f"# {inpath}\n")
+                            enc.encode_stream(inf, outf, progress)
+                            if len(inputs) > 1:
+                                outf.write("\n")
+            else:
+                with _open_input(inpath) as f:
+                    data = f.read()
+                progress.update(len(data))
+                result = encode(data, block_size=args.block_size, alphabet_type=args.alphabet,
+                                line_width=args.line_width)
+                if args.header:
+                    result = make_header(args.block_size, args.alphabet) + result
+                if args.output_dir:
+                    outpath = os.path.join(args.output_dir, os.path.basename(inpath) + ".b81")
+                    if not args.force and os.path.exists(outpath):
+                        print(f"base81: {outpath} exists (use -f)", file=sys.stderr)
+                        return 1
+                    with open(outpath, "w") as outf:
+                        outf.write(result)
+                        if not result.endswith('\n'):
+                            outf.write('\n')
+                else:
+                    with _open_output(args.output, binary=False, dry_run=False) as outf:
+                        if len(inputs) > 1:
+                            outf.write(f"# {inpath}\n")
+                        outf.write(result)
+                        if not result.endswith('\n'):
+                            outf.write('\n')
+                        if len(inputs) > 1:
+                            outf.write("\n")
             progress.finish()
-        return 0
-    except (ValidationError, CorruptStreamError, BoundaryError) as e:
-        if not args.quiet:
-            print(f"base81: error: {e}", file=sys.stderr)
-        return 1
+        except (ValidationError, CorruptStreamError, BoundaryError) as e:
+            if not args.quiet:
+                print(f"base81: error processing {inpath}: {e}", file=sys.stderr)
+            return 1
+    return 0
+
 
 def cmd_decode(args):
     config = load_config(args.config)
@@ -732,65 +775,83 @@ def cmd_decode(args):
         print(f"  Codec: {args.alphabet or 'auto'}/{args.block_size or 'auto'}")
         print(f"  Estimated output: ~{estimated_bytes} bytes")
         return 0
-
+    
     if len(inputs) > 1 and args.output and not args.output_dir:
         print("base81: error: with multiple inputs, use -d/--output-dir", file=sys.stderr)
         return 1
 
-    inpath = inputs[0]
-    total = _get_file_size(inpath) if inpath != "-" else None
-    progress = ProgressIndicator(total=total, quiet=args.quiet)
-    try:
-        with _open_input(inpath, binary=False) as f:
-            if args.stream and total and total > 1024*1024:
-                decoder = StreamingDecoder(
-                    block_size=args.block_size or 7,
-                    alphabet_type=args.alphabet or "standard",
-                    ignore_whitespace=args.ignore_ws,
-                    validate_canonical=not args.no_canonical_check,
-                    buffer_size=args.buffer_size or 65536
-                )
-                first_chunk = f.read(1024)
-                remaining = f.read()
-                text = first_chunk + remaining
-                if args.header:
-                    bs, alpha, payload = parse_header(text)
+    # Sequential processing
+    for idx, inpath in enumerate(inputs):
+        total = _get_file_size(inpath) if inpath != "-" else None
+        progress = ProgressIndicator(total=total, quiet=args.quiet)
+        try:
+            with _open_input(inpath, binary=False) as f:
+                if args.stream and total and total > 1024*1024:
                     decoder = StreamingDecoder(
-                        block_size=bs,
-                        alphabet_type=alpha,
+                        block_size=args.block_size or 7,
+                        alphabet_type=args.alphabet or "standard",
                         ignore_whitespace=args.ignore_ws,
                         validate_canonical=not args.no_canonical_check,
                         buffer_size=args.buffer_size or 65536
                     )
-                    text = payload
-                from io import StringIO
-                fake_file = StringIO(text)
-                with _open_output(args.output, binary=True, dry_run=False) as outf:
-                    decoder.decode_stream(fake_file, outf, progress)
-            else:
-                text = f.read()
-                progress.update(len(text))
-                bs = args.block_size
-                alpha = args.alphabet
-                payload = text
-                if args.header:
-                    bs, alpha, payload = parse_header(text)
-                if bs is None or alpha is None:
-                    if not args.quiet:
-                        print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
-                    return 1
-                result = decode(payload, ignore_whitespace=args.ignore_ws,
-                                validate_canonical=not args.no_canonical_check,
-                                block_size=bs, max_input_length=args.max_input_length,
-                                alphabet_type=alpha)
-                with _open_output(args.output, binary=True, dry_run=False) as outf:
-                    outf.write(result)
-                progress.finish()
-        return 0
-    except (ValidationError, CorruptStreamError, BoundaryError, UnicodeDecodeError) as e:
-        if not args.quiet:
-            print(f"base81: error: {e}", file=sys.stderr)
-        return 1
+                    first_chunk = f.read(1024)
+                    remaining = f.read()
+                    text = first_chunk + remaining
+                    if args.header:
+                        bs, alpha, payload = parse_header(text)
+                        decoder = StreamingDecoder(
+                            block_size=bs,
+                            alphabet_type=alpha,
+                            ignore_whitespace=args.ignore_ws,
+                            validate_canonical=not args.no_canonical_check,
+                            buffer_size=args.buffer_size or 65536
+                        )
+                        text = payload
+                    from io import StringIO
+                    fake_file = StringIO(text)
+                    if args.output_dir:
+                        outpath = os.path.join(args.output_dir, os.path.basename(inpath) + ".bin")
+                        if not args.force and os.path.exists(outpath):
+                            print(f"base81: {outpath} exists (use -f)", file=sys.stderr)
+                            return 1
+                        with open(outpath, "wb") as outf:
+                            decoder.decode_stream(fake_file, outf, progress)
+                    else:
+                        with _open_output(args.output, binary=True, dry_run=False) as outf:
+                            decoder.decode_stream(fake_file, outf, progress)
+                else:
+                    text = f.read()
+                    progress.update(len(text))
+                    bs = args.block_size
+                    alpha = args.alphabet
+                    payload = text
+                    if args.header:
+                        bs, alpha, payload = parse_header(text)
+                    if bs is None or alpha is None:
+                        if not args.quiet:
+                            print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
+                        return 1
+                    result = decode(payload, ignore_whitespace=args.ignore_ws,
+                                    validate_canonical=not args.no_canonical_check,
+                                    block_size=bs, max_input_length=args.max_input_length,
+                                    alphabet_type=alpha)
+                    if args.output_dir:
+                        outpath = os.path.join(args.output_dir, os.path.basename(inpath) + ".bin")
+                        if not args.force and os.path.exists(outpath):
+                            print(f"base81: {outpath} exists (use -f)", file=sys.stderr)
+                            return 1
+                        with open(outpath, "wb") as outf:
+                            outf.write(result)
+                    else:
+                        with _open_output(args.output, binary=True, dry_run=False) as outf:
+                            outf.write(result)
+            progress.finish()
+        except (ValidationError, CorruptStreamError, BoundaryError, UnicodeDecodeError) as e:
+            if not args.quiet:
+                print(f"base81: error processing {inpath}: {e}", file=sys.stderr)
+            return 1
+    return 0
+
 
 def cmd_info(args):
     from ._codecs import list_codecs, CODECS
