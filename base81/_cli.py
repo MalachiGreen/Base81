@@ -655,7 +655,7 @@ def cmd_encode(args: argparse.Namespace) -> int:
         def encode_one(inpath: str) -> Tuple[str, str]:
             with _open_input(inpath) as f:
                 data = f.read()
-            res = encode(data, block_size=args.block_size, alphabet_type=args.alphabet,
+            res = encode(cast(bytes, data), block_size=args.block_size, alphabet_type=args.alphabet,
                          line_width=args.line_width)
             if args.header:
                 res = make_header(args.block_size, args.alphabet) + res
