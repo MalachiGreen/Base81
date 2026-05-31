@@ -41,7 +41,7 @@ class Encoder:
                  max_buffer: int = 1048576) -> None:
         cfg = CODECS.get((alphabet_type, block_size))
         if cfg is None:
-            raise ValidationError(f"unknown codec")
+            raise ValidationError("unknown codec")
         if max_input_length is not None and (isinstance(max_input_length, bool) or not isinstance(max_input_length, int) or max_input_length <= 0):
             raise ValidationError("max_input_length must be positive int")
         if max_buffer is not None and (isinstance(max_buffer, bool) or not isinstance(max_buffer, int) or max_buffer <= 0):
@@ -100,7 +100,7 @@ class Decoder:
                  max_buffer: int = 1048576, alphabet_type: str = "standard") -> None:
         cfg = CODECS.get((alphabet_type, block_size))
         if cfg is None:
-            raise ValidationError(f"unknown codec")
+            raise ValidationError("unknown codec")
         if max_input_length is not None and (isinstance(max_input_length, bool) or not isinstance(max_input_length, int) or max_input_length <= 0):
             raise ValidationError("max_input_length must be positive int")
         if max_buffer is not None and (isinstance(max_buffer, bool) or not isinstance(max_buffer, int) or max_buffer <= 0):

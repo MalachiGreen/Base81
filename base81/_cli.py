@@ -91,7 +91,7 @@ import signal
 import time
 import os
 import json
-from typing import cast, Optional, List, Dict, Any, Tuple, BinaryIO, TextIO, Generator
+from typing import cast, Optional, List, Dict, Any, BinaryIO, TextIO, Generator
 from contextlib import contextmanager
 from ._api import encode, decode
 from ._header import make_header, parse_header

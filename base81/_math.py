@@ -19,7 +19,7 @@ Invariants:
 """
 
 import types
-from typing import Dict, List, Any, Union, Mapping
+from typing import Dict, List, Any, Mapping
 from ._exceptions import CodecError, ValidationError, CorruptStreamError
 
 
