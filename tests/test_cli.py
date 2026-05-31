@@ -24,7 +24,8 @@ def test_cli_encode_decode_stdin_stdout(tmp_path):
     out, err, code = run_cli(["encode"], stdin_data=data.decode('latin-1'))
     assert code == 0, f"encode stderr: {err}"
     encoded = out.strip()
-    out2, err2, code2 = run_cli(["decode"], stdin_data=encoded)
+    out2, err2, code2 = run_cli(["decode", "--ignore-ws", "-b", "7", "-a", "standard"],
+                                stdin_data=encoded)
     assert code2 == 0, f"decode stderr: {err2}"
     assert out2.encode('latin-1') == data
 
@@ -55,8 +56,8 @@ def test_cli_header_option(tmp_path):
     out1, err1, code1 = run_cli(["encode", "--header", "-i", str(infile), "-o", str(enc_file)])
     assert code1 == 0, f"encode failed: {err1}"
     
-    out2, err2, code2 = run_cli(["decode", "--header", "-i", str(enc_file),
-                                 "-o", str(tmp_path / "dec.bin")])
+    out2, err2, code2 = run_cli(["decode", "--header", "--ignore-ws",
+                                 "-i", str(enc_file), "-o", str(tmp_path / "dec.bin")])
     assert code2 == 0, f"decode failed: {err2}"
     assert (tmp_path / "dec.bin").read_bytes() == b"Header test"
 
