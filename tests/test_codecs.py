@@ -1,7 +1,5 @@
-import pytest
 from base81 import get_codec, list_codecs
 from base81._codecs import CODECS
-from base81._exceptions import CodecError
 
 
 def test_list_codecs():

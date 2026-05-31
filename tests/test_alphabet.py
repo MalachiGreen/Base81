@@ -1,4 +1,3 @@
-import pytest
 from base81 import ALPHABET_STANDARD, ALPHABET_URL
 
 

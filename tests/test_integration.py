@@ -1,7 +1,5 @@
-import pytest
 import os
 from base81 import encode, decode, Encoder, Decoder, make_header, parse_header
-from base81._exceptions import ValidationError
 
 
 def test_roundtrip_all_codecs_all_sizes():

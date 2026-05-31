@@ -1,5 +1,4 @@
 import pytest
-import random
 import os
 
 from base81 import list_codecs

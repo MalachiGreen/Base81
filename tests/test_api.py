@@ -1,6 +1,6 @@
 import pytest
 from base81 import encode, decode
-from base81._exceptions import ValidationError, CorruptStreamError, BoundaryError
+from base81._exceptions import ValidationError, BoundaryError
 
 
 @pytest.mark.parametrize("alphabet,block_size", [("standard", 3), ("standard", 7), ("url", 5)])

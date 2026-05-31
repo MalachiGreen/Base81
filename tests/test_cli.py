@@ -1,8 +1,6 @@
 import subprocess
 import sys
-import pytest
 import base81
-from pathlib import Path
 
 def run_cli(args, stdin_data=None):
     cmd = [sys.executable, "-m", "base81"] + args
