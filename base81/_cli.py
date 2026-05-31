@@ -925,8 +925,8 @@ def cmd_info(args: argparse.Namespace) -> int:
                 import re
                 m = re.match(r'\^b81:(\d+):(\w+)\^', first)
                 if m:
-                    bs, alpha = m.groups()
-                    print(f"\n{args.file} header: block_size={bs}, alphabet={alpha}")
+                    bs_val, alpha_val = m.groups()
+                    print(f"\n{args.file} header: block_size={bs_val}, alphabet={alpha_val}")
                 else:
                     print(f"\n{args.file}: invalid header")
             else:
