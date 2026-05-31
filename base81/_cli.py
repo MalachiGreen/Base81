@@ -671,7 +671,7 @@ def cmd_encode(args: argparse.Namespace) -> int:
     # Parallel execution for multiple inputs (if -j > 1)
     if args.jobs and args.jobs > 1 and len(inputs) > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
-        def encode_one(inpath):
+        def encode_one(inpath) -> Tuple[str, str]:
             with _open_input(inpath) as f:
                 data = f.read()
             res = encode(data, block_size=args.block_size, alphabet_type=args.alphabet,
@@ -892,15 +892,21 @@ def cmd_decode(args: argparse.Namespace) -> int:
                     text = f.read()
                     progress.update(len(text))
                     # Remove type annotations to avoid redefinition errors
+                    # Use separate variables for header-parsed values
                     bs = args.block_size
                     alpha = args.alphabet
                     payload = text
                     if args.header:
-                        bs, alpha, payload = parse_header(text)
-                    if bs is None or alpha is None:
-                        if not args.quiet:
-                            print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
-                        return 1
+                        bs_h, alpha_h, payload = parse_header(text)
+                        # Override only if not already provided by CLI
+                        if bs is None:
+                            bs = bs_h
+                        if alpha is None:
+                            alpha = alpha_h
+                        if bs is None or alpha is None:
+                            if not args.quiet:
+                                print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
+                            return 1
                     result = decode(payload,
                                     ignore_whitespace=args.ignore_ws,
                                     validate_canonical=not args.no_canonical_check,
