@@ -19,7 +19,7 @@ Validation checks:
 """
 
 import types
-from typing import Dict, Tuple, List, Any, Mapping
+from typing import Dict, Tuple, List, Any, Mapping, Optional
 from ._alphabet import ALPHABET_STANDARD, ALPHABET_URL
 from ._math import POW
 from ._exceptions import CodecError
@@ -87,7 +87,7 @@ CODECS: Mapping[Tuple[str, int], Dict[str, Any]] = types.MappingProxyType(_CODEC
 LOOKUPS: Mapping[str, Dict[str, Any]] = types.MappingProxyType(_LOOKUPS)
 
 
-def get_codec(alpha: str, bs: int) -> Dict[str, Any] | None:
+def get_codec(alpha: str, bs: int) -> Optional[Dict[str, Any]]:
     """Return codec config or None if not registered."""
     return CODECS.get((alpha, bs))
 
