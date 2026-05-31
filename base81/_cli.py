@@ -803,7 +803,6 @@ def cmd_decode(args: argparse.Namespace) -> int:
                         progress.finish()
                         continue
 
-                    # Use distinct variable names to avoid redefinition
                     block_size_val: int = args.block_size if args.block_size is not None else 7
                     alphabet_val: str = args.alphabet if args.alphabet is not None else "standard"
                     payload_start = 0
@@ -870,9 +869,9 @@ def cmd_decode(args: argparse.Namespace) -> int:
                     if args.header:
                         bs_h, alpha_h, payload = parse_header(text)
                         if bs is None:
-                            bs = bs_h
+                            bs = cast(int, bs_h)
                         if alpha is None:
-                            alpha = alpha_h
+                            alpha = cast(str, alpha_h)
                     if bs is None or alpha is None:
                         if not args.quiet:
                             print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
