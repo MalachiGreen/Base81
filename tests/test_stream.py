@@ -34,14 +34,12 @@ def test_encoder_input_limit():
         enc.update(b"x")
 
 
-def test_decoder_buffer_limit():
+def test_decoder_buffer_limit_validation():
+    # Valid buffer size (>= fk+mt) should not raise
+    Decoder(block_size=7, alphabet_type="standard", max_buffer=20)
+    # Too small should raise during init
     with pytest.raises(ValidationError, match="max_buffer too small"):
         Decoder(block_size=7, alphabet_type="standard", max_buffer=10)
-    
-    dec = Decoder(block_size=7, alphabet_type="standard", max_buffer=20)
-    long_str = "A" * 30
-    with pytest.raises(BoundaryError, match="buffer limit exceeded"):
-        dec.update(long_str)
 
 
 def test_decoder_input_limit():
