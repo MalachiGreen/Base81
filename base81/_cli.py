@@ -839,7 +839,9 @@ def cmd_decode(args: argparse.Namespace) -> int:
                         end = peek.find('^', start + 1)
                         if end != -1:
                             header = peek[start:end+1]
-                            bs, alpha, _ = parse_header(header)
+                            bs_h, alpha_h, _ = parse_header(header)
+                            bs = cast(int, bs_h)
+                            alpha = cast(str, alpha_h)
                             payload_start = end + 1
 
                     decoder = StreamingDecoder(
@@ -901,9 +903,9 @@ def cmd_decode(args: argparse.Namespace) -> int:
                     if args.header:
                         bs_h, alpha_h, payload = parse_header(text)
                         if bs is None:
-                            bs = bs_h
+                            bs = cast(int, bs_h)
                         if alpha is None:
-                            alpha = alpha_h
+                            alpha = cast(str, alpha_h)
                     if bs is None or alpha is None:
                         if not args.quiet:
                             print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
