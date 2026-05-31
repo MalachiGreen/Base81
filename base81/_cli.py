@@ -85,6 +85,7 @@ See Also:
     https://github.com/MalachiGreen/Base81
 """
 
+
 import sys
 import argparse
 import signal
@@ -650,12 +651,13 @@ def cmd_encode(args: argparse.Namespace) -> int:
     # Parallel execution
     if args.jobs and args.jobs > 1 and len(inputs) > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
-        from typing import Tuple
 
-        def encode_one(inpath: str) -> Tuple[str, str]:
+        def encode_one(inpath: str):
             with _open_input(inpath) as f:
-                data = f.read()
-            res = encode(cast(bytes, data), block_size=args.block_size, alphabet_type=args.alphabet,
+                raw_data = f.read()
+            if not isinstance(raw_data, bytes):
+                raise TypeError(f"Expected bytes, got {type(raw_data).__name__}")
+            res = encode(raw_data, block_size=args.block_size, alphabet_type=args.alphabet,
                          line_width=args.line_width)
             if args.header:
                 res = make_header(args.block_size, args.alphabet) + res
@@ -867,8 +869,6 @@ def cmd_decode(args: argparse.Namespace) -> int:
                     bs: Optional[int] = args.block_size
                     alpha: Optional[str] = args.alphabet
                     if args.header:
-                        bs_h: int
-                        alpha_h: str
                         bs_h, alpha_h, payload = parse_header(text)
                         if bs is None:
                             bs = bs_h
@@ -878,9 +878,7 @@ def cmd_decode(args: argparse.Namespace) -> int:
                         if not args.quiet:
                             print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
                         return 1
-                    # Narrow types for mypy
-                    assert isinstance(bs, int)
-                    assert isinstance(alpha, str)
+                    assert isinstance(bs, int) and isinstance(alpha, str)
                     result = decode(payload,
                                     ignore_whitespace=args.ignore_ws,
                                     validate_canonical=not args.no_canonical_check,
