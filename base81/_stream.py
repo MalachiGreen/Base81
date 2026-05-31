@@ -77,9 +77,9 @@ class Encoder:
         chunk = self._buf[:ready]
         self._buf = self._buf[ready:]
         return ''.join(
-            int_to_radix(bytes_to_int(chunk[i:i+fn]), fk, self._ac)
+            int_to_radix(bytes_to_int(bytes(chunk[i:i+fn])), fk, self._ac)
             for i in range(0, ready, fn)
-        )
+)
 
     def finalize(self) -> str:
         """Flush remaining bytes, return final encoded chars."""
