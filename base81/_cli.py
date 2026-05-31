@@ -146,7 +146,6 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 def merge_config(args: argparse.Namespace, config: Dict[str, Any]) -> argparse.Namespace:
     """Apply config defaults to args (CLI overrides config)."""
     for key, value in config.items():
-        # Only set if attribute exists and is None (not provided by CLI)
         if hasattr(args, key) and getattr(args, key) is None:
             setattr(args, key, value)
     return args
@@ -158,7 +157,6 @@ def _open_input(path: Optional[str], binary: bool = True) -> Generator[Any, None
         if binary and hasattr(sys.stdin, 'buffer'):
             yield sys.stdin.buffer
         elif binary:
-            # fallback for tests
             class FakeBinary:
                 def read(self, size: int = -1) -> bytes:
                     data = sys.stdin.read()
@@ -240,11 +238,9 @@ class StreamingEncoder:
         self._line_len = 0
 
     def update(self, data: bytes) -> str:
-        """Forward to internal encoder (for compatibility with streaming API)."""
         return self._encoder.update(data)
 
     def finalize(self) -> str:
-        """Forward to internal encoder."""
         return self._encoder.finalize()
 
     def _apply_line_wrapping(self, text: str) -> str:
@@ -312,11 +308,9 @@ class StreamingDecoder:
         self.buffer_size = buffer_size
 
     def update(self, s: str) -> bytes:
-        """Forward to internal decoder."""
         return self._decoder.update(s)
 
     def finalize(self) -> bytes:
-        """Forward to internal decoder."""
         return self._decoder.finalize()
 
     def decode_stream(self, input_file: TextIO, output_file: BinaryIO,
@@ -359,21 +353,18 @@ def _run_benchmark(block_size: int, alphabet_type: str, size_mb: int = 10) -> No
     print(f"Decode: {decode_time:.2f}s ({decode_speed:.1f} MB/s)")
     print(f"Output size: {len(encoded)} chars ({len(encoded)/size_mb/1024:.1f} KB/MB)")
     
-    # Rough efficiency
     theoretical = (block_size * 8) / (9 if block_size == 7 else (4 if block_size == 3 else 7))
-    actual = (size_mb * 1024 * 1024 * 8) / (len(encoded) * 6)  # approximate
+    actual = (size_mb * 1024 * 1024 * 8) / (len(encoded) * 6)
     print(f"Efficiency: {theoretical:.1%} theoretical, ~{actual:.1%} actual")
 
 
 # Completion
 def cmd_completion(args: argparse.Namespace) -> int:
-    """Handle shell completion via argcomplete."""
     if argcomplete is None:
         print("base81: argcomplete not installed. Run: pip install argcomplete", file=sys.stderr)
         return 1
     
     if args.action == "install":
-        # Detect shell from environment
         shell_path = os.environ.get('SHELL', '')
         shell = os.path.basename(shell_path) if shell_path else ''
         
@@ -382,7 +373,6 @@ def cmd_completion(args: argparse.Namespace) -> int:
             print("Please specify shell explicitly: base81 completion bash", file=sys.stderr)
             return 1
         
-        # Determine rc file
         rc_files = {
             'bash': os.path.expanduser('~/.bashrc'),
             'zsh': os.path.expanduser('~/.zshrc'),
@@ -391,11 +381,9 @@ def cmd_completion(args: argparse.Namespace) -> int:
         }
         rc_file = rc_files[shell]
         
-        # Ensure fish config dir exists
         if shell == 'fish':
             os.makedirs(os.path.dirname(rc_file), exist_ok=True)
         
-        # Generate activation line
         marker = "# base81 argcomplete activation"
         if shell == 'fish':
             activation = f"\n{marker}\nregister-python-argcomplete base81\n"
@@ -404,14 +392,12 @@ def cmd_completion(args: argparse.Namespace) -> int:
         else:
             activation = f"\n{marker}\neval \"$(register-python-argcomplete base81)\"\n"
         
-        # Check if already installed
         if os.path.exists(rc_file):
             with open(rc_file) as f:
                 if marker in f.read():
                     print(f"Completion already installed in {rc_file}", file=sys.stderr)
                     return 0
         
-        # Append to rc file
         with open(rc_file, 'a') as f:
             f.write(activation)
         
@@ -420,7 +406,6 @@ def cmd_completion(args: argparse.Namespace) -> int:
         return 0
     
     elif args.action:
-        # Print shell-specific activation script
         print(argcomplete.shellcode([sys.argv[0]], shell=args.action))
         return 0
     
@@ -565,7 +550,6 @@ Examples:
 
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    # Encode
     enc = sub.add_parser("encode", aliases=["enc", "e"])
     enc.add_argument("inputs", nargs="*", metavar="FILE")
     enc.add_argument("-i", "--input")
@@ -582,7 +566,6 @@ Examples:
     enc.add_argument("--benchmark", action="store_true")
     enc.add_argument("--dry-run", action="store_true")
 
-    # Decode
     dec = sub.add_parser("decode", aliases=["dec", "d"])
     dec.add_argument("inputs", nargs="*", metavar="FILE")
     dec.add_argument("-i", "--input")
@@ -599,15 +582,12 @@ Examples:
     dec.add_argument("--buffer-size", type=int, metavar="BYTES")
     dec.add_argument("--dry-run", action="store_true")
 
-    # Info
     info = sub.add_parser("info", aliases=["show", "status"])
     info.add_argument("file", nargs="?")
 
-    # Help
     help_parser = sub.add_parser("help")
     help_parser.add_argument("command", nargs="?")
 
-    # Completion
     comp = sub.add_parser("completion")
     comp.add_argument("action", nargs="?", choices=["install", "bash", "zsh", "fish", "tcsh"])
 
@@ -619,7 +599,6 @@ def cmd_encode(args: argparse.Namespace) -> int:
     config = load_config(args.config)
     args = merge_config(args, config)
 
-    # Set defaults after config
     if args.block_size is None:
         args.block_size = 7
     if args.alphabet is None:
@@ -668,7 +647,7 @@ def cmd_encode(args: argparse.Namespace) -> int:
         print("base81: error: with multiple inputs, use -d/--output-dir", file=sys.stderr)
         return 1
 
-    # Parallel execution for multiple inputs (if -j > 1)
+    # Parallel execution
     if args.jobs and args.jobs > 1 and len(inputs) > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
         from typing import Tuple
@@ -698,20 +677,18 @@ def cmd_encode(args: argparse.Namespace) -> int:
                     print(res)
         return 0
 
-    # Sequential processing (single file or multiple with output_dir)
+    # Sequential processing
     for inpath in inputs:
         total = _get_file_size(inpath) if inpath != "-" else None
         progress = ProgressIndicator(total=total, quiet=args.quiet)
 
         try:
             if args.stream and total and total > 10 * 1024 * 1024:
-                # ---------- STREAMING BRANCH (constant memory) ----------
                 enc = StreamingEncoder(
                     args.block_size, args.alphabet, args.line_width,
                     buffer_size=args.buffer_size or 65536
                 )
 
-                # Determine output file (if output_dir, open per‑file; else reuse stdout)
                 if args.output_dir:
                     outpath = os.path.join(args.output_dir, os.path.basename(inpath) + ".b81")
                     if not args.force and os.path.exists(outpath):
@@ -719,7 +696,6 @@ def cmd_encode(args: argparse.Namespace) -> int:
                         return 1
                     outf = open(outpath, "w")
                 else:
-                    # For multiple files to stdout, separate with comments
                     if len(inputs) > 1:
                         print(f"# {inpath}")
                     outf = _open_output(args.output, binary=False, dry_run=False).__enter__()
@@ -742,14 +718,13 @@ def cmd_encode(args: argparse.Namespace) -> int:
                         if args.line_width and not final.endswith('\n'):
                             outf.write('\n')
                     if len(inputs) > 1 and not args.output_dir:
-                        print()  # extra newline between files
+                        print()
                 finally:
                     if args.output_dir:
                         outf.close()
                     else:
                         _open_output(args.output, binary=False, dry_run=False).__exit__(None, None, None)
             else:
-                # ---------- NON‑STREAMING BRANCH ----------
                 with _open_input(inpath) as f:
                     data = f.read()
                 progress.update(len(data))
@@ -815,15 +790,13 @@ def cmd_decode(args: argparse.Namespace) -> int:
         print("base81: error: with multiple inputs, use -d/--output-dir", file=sys.stderr)
         return 1
 
-    # Sequential processing over multiple input files
+    # Sequential processing
     for idx, inpath in enumerate(inputs):
         total = _get_file_size(inpath) if inpath != "-" else None
         progress = ProgressIndicator(total=total, quiet=args.quiet)
         try:
             with _open_input(inpath, binary=False) as f:
                 if args.stream and total and total > 1024 * 1024:
-                    # ---------- STREAMING BRANCH (constant memory) ----------
-                    # Peek first chunk to detect header
                     peek = f.read(1024)
                     if not peek:
                         progress.finish()
@@ -833,15 +806,12 @@ def cmd_decode(args: argparse.Namespace) -> int:
                     alpha = args.alphabet or "standard"
                     payload_start = 0
 
-                    # Detect header if requested
                     if args.header and '^b81:' in peek:
                         start = peek.find('^b81:')
                         end = peek.find('^', start + 1)
                         if end != -1:
                             header = peek[start:end+1]
-                            bs_h, alpha_h, _ = parse_header(header)
-                            bs = cast(int, bs_h)
-                            alpha = cast(str, alpha_h)
+                            bs, alpha, _ = parse_header(header)
                             payload_start = end + 1
 
                     decoder = StreamingDecoder(
@@ -852,7 +822,6 @@ def cmd_decode(args: argparse.Namespace) -> int:
                         buffer_size=args.buffer_size or 65536
                     )
 
-                    # Determine output destination
                     if args.output_dir:
                         outpath = os.path.join(args.output_dir, os.path.basename(inpath) + ".bin")
                         if not args.force and os.path.exists(outpath):
@@ -863,13 +832,11 @@ def cmd_decode(args: argparse.Namespace) -> int:
                         outf = _open_output(args.output, binary=True, dry_run=False).__enter__()
 
                     try:
-                        # Process the remainder of the peek buffer (after header)
                         if payload_start < len(peek):
                             out_data = decoder.update(peek[payload_start:])
                             if out_data:
                                 outf.write(out_data)
 
-                        # Stream the rest of the file in chunks
                         chunk_size = args.buffer_size or 65536
                         while True:
                             chunk = f.read(chunk_size)
@@ -881,7 +848,6 @@ def cmd_decode(args: argparse.Namespace) -> int:
                             if out_data:
                                 outf.write(out_data)
 
-                        # Finalize
                         out_data = decoder.finalize()
                         if out_data:
                             outf.write(out_data)
@@ -893,23 +859,24 @@ def cmd_decode(args: argparse.Namespace) -> int:
 
                     progress.finish()
                 else:
-                    # ---------- NON‑STREAMING BRANCH ----------
+                    # Non‑streaming branch
                     text = f.read()
                     progress.update(len(text))
-                    # Use separate variables to avoid type confusion
-                    bs = args.block_size
-                    alpha = args.alphabet
+                    bs: Optional[int] = args.block_size
+                    alpha: Optional[str] = args.alphabet
                     payload = text
                     if args.header:
                         bs_h, alpha_h, payload = parse_header(text)
                         if bs is None:
-                            bs = cast(int, bs_h)
+                            bs = bs_h
                         if alpha is None:
-                            alpha = cast(str, alpha_h)
+                            alpha = alpha_h
                     if bs is None or alpha is None:
                         if not args.quiet:
                             print("base81: error: missing block-size/alphabet (use -b/-a or --header)", file=sys.stderr)
                         return 1
+                    # mypy needs assertion to narrow type
+                    assert bs is not None and alpha is not None
                     result = decode(payload,
                                     ignore_whitespace=args.ignore_ws,
                                     validate_canonical=not args.no_canonical_check,
@@ -970,7 +937,6 @@ def main() -> int:
     signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(130))
     parser = _create_parser()
     
-    # Activate argcomplete if available
     if argcomplete:
         argcomplete.autocomplete(parser)
     
