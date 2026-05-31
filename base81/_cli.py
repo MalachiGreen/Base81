@@ -92,7 +92,7 @@ import signal
 import time
 import os
 import json
-from typing import cast, Optional, List, Dict, Any, BinaryIO, TextIO, Generator
+from typing import cast, Optional, List, Dict, Any, Tuple, BinaryIO, TextIO, Generator
 from contextlib import contextmanager
 from ._api import encode, decode
 from ._header import make_header, parse_header
@@ -652,7 +652,7 @@ def cmd_encode(args: argparse.Namespace) -> int:
     if args.jobs and args.jobs > 1 and len(inputs) > 1:
         from concurrent.futures import ProcessPoolExecutor, as_completed
 
-        def encode_one(inpath: str):
+        def encode_one(inpath: str) -> Tuple[str, str]:
             with _open_input(inpath) as f:
                 raw_data = f.read()
             if not isinstance(raw_data, bytes):
