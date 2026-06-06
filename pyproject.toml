@@ -29,6 +29,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov", "mypy>=1.0", "ruff>=0.4.0"]
+cli = ["argcomplete"]
 
 [project.urls]
 Homepage = "https://github.com/MalachiGreen/Base81"
