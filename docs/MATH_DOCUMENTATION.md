@@ -96,7 +96,8 @@ For Base81 ($f_n=7$):
 |:---:|:---:|:---:|:---:|:---:|
 | 1 | 2 | 6,561 | 256 | 2.0 |
 | 2 | 3 | 531,441 | 65,536 | 1.5 |
-| 3 | 4 | 43,046,721 | 16,777,216 | 1.33 || 4 | 5 | 3,486,784,401 | 4,294,967,296 | 1.25 |
+| 3 | 4 | 43,046,721 | 16,777,216 | 1.33 |
+| 4 | 5 | 3,486,784,401 | 4,294,967,296 | 1.25 |
 | 5 | 6 | 282,429,536,481 | 1,099,511,627,776 | 1.2 |
 | 6 | 8 | 1,853,020,188,851,841 | 281,474,976,710,656 | 1.33 |
 
@@ -146,6 +147,7 @@ $$
 ---
 
 ## 6. Density Analysis
+
 ### 6.1 Encoding Efficiency
 
 $$
@@ -194,7 +196,8 @@ $$
 \text{total\_bytes} = \sum \text{input\_sizes}
 $$
 $$
-\text{pending\_bytes} = |B|$$
+\text{pending\_bytes} = |B|
+$$
 `pending_bytes` always $< f_n$ before `finalize()`.
 
 ### 7.3 Finalize Operation
@@ -243,6 +246,7 @@ Precomputed once at module load.
 - $f_n \leq 7$, $f_k \leq 9$
 - Tails: $r \leq 6$, $k \leq 8$
 - All operations effectively $O(1)$ per byte
+
 ---
 
 ## 10. Security Properties
@@ -292,7 +296,8 @@ Invalid values (e.g., $81^9 - 1$ decoding to 7 bytes) rejected, preventing:
 def find_min_k(radix: int, r: int) -> int:
     """Find smallest k such that radix^k >= 256^r."""
     k = 1
-    while pow(radix, k) < pow(256, r):        k += 1
+    while pow(radix, k) < pow(256, r):
+        k += 1
     return k
 
 def tail_enc_table(radix: int, fn: int) -> dict:
@@ -341,6 +346,7 @@ while POW81[k] < POW256[r]:
 ---
 
 ## 14. Examples
+
 ### Example 1: Encode "Hi" (2 bytes) with Base81
 - **Bytes**: `0x48 0x69`
 - **Integer**: $V = 0x4869 = 18,537$
