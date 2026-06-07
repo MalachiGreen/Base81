@@ -36,7 +36,7 @@ assert decoded == data
 ## CLI
 
 ```bash
-# Encode with self‑describing header
+# Encode with self-describing header
 $ echo -n "Hello" | base81 encode --header
 ^b81:7:standard^18EQ4f5^^
 
@@ -52,13 +52,13 @@ Hello
 - **Streaming API**: Process multi‑gigabyte data with bounded memory  
 - **DoS hardened**: Configurable `max_input_length` and `max_buffer` guards  
 - **Canonical encoding**: Every byte sequence maps to exactly one valid string  
-- **Self‑describing headers**: Optional `^b81:N:alphabet^` framing for protocol use  
+- **Self-describing headers**: Optional `^b81:N:alphabet^` framing for protocol use  
 - **Optional dependencies**: Pure Python 3.8+, standard library only. CLI tab‑completion via argcomplete (install with `pip install base81[cli]`)
 
 ## Supported Codecs
 
 | Alphabet | Radix | Block | Efficiency | Use Case |
-|----------|-------|-------|------------|----------|
+|:---:|:---:|:---:|:---:|:---:|
 | standard | 81 | 7→9 | 98.1% | Maximum density |
 | standard | 81 | 3→4 | 94.6% | Legacy / short messages |
 | url | 62 | 5→7 | 94.6% | URLs, filenames, shells |
